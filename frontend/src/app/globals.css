@@ -1,0 +1,67 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f1eee5;
+  --foreground: #16241f;
+  --font-plex-sans: Aptos, "Aptos Display", Bahnschrift, "Trebuchet MS", sans-serif;
+  --font-plex-mono: "Cascadia Code", "JetBrains Mono", Consolas, "Liberation Mono", monospace;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 320px;
+  background: var(--background);
+  scroll-behavior: smooth;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-plex-sans), sans-serif;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: #c65331;
+  color: #ffffff;
+}
+
+:focus-visible {
+  outline: 3px solid rgba(198, 83, 49, 0.4);
+  outline-offset: 3px;
+}
+
+.value-text {
+  font-family: var(--font-plex-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.03em;
+}
+
+.badge-text {
+  font-family: var(--font-plex-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}

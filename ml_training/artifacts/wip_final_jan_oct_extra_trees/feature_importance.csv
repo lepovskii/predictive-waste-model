@@ -1,0 +1,47 @@
+feature,importance
+num__setup_time,0.1553008467672106
+num__rolling_hrs,0.07506306775231407
+num__kv_33,0.06814984570900216
+num__electricity_total_kwh,0.06252100894138096
+num__production_ton,0.05635101184155701
+num__gas_total_day_nm3,0.05314427070348266
+num__raw_material_ton,0.04263204292435211
+cat__profile_name_IWF 250x125,0.039518715038582806
+num__kv_20,0.03886643263209085
+num__idle_hrs,0.03669146121246774
+num__rolling_hot_hrs,0.036049052516478435
+num__availables_hrs,0.032548561261743984
+num__material_pcs,0.029404642874178228
+num__production_pcs,0.02753765316364558
+num__total_hrs,0.02335045444741431
+num__mechanic_stop_min,0.021604521995230972
+num__others_stop_min,0.019953152040437593
+num__electric_stop_min,0.019893765481526157
+cat__profile_name_HB 150x150,0.019195195156317558
+num__production_stop_min,0.018129173457390915
+cat__profile_name_IWF 300x150,0.017369248864922186
+cat__profile_name_UNP 150x75,0.017200682312590754
+num__stand_change,0.015849171807508156
+num__program_stop_min,0.015477751013600957
+cat__profile_name_IWF 200x100,0.015436295787532387
+num__downtime_total_min,0.014277708881793662
+cat__profile_name_IWF 150x75,0.011875933701722732
+cat__profile_name_IWF 248x124,0.0112788327946498
+cat__profile_name_IWF 198x99,0.0013553683355197407
+num__trial_rolling_stop_min,0.001145808080625918
+cat__profile_name_UNP 100x50,0.0007833904015280428
+cat__profile_name_L 150x150x12,0.0007519090694308168
+cat__profile_name_L 150x150x15,0.0003421831095342746
+cat__profile_name_HB 175x175,0.00025926176742614867
+cat__profile_name_L 130x130x12,0.0001678396944419415
+cat__profile_name_HB 125x125,0.00016323720495061228
+cat__profile_name_HB 100x100,0.00014666562283873678
+cat__profile_name_L 130x130x10,6.320423321332383e-05
+num__test_rolling_stop_min,5.021382760483015e-05
+cat__profile_name_UNP 200x80,4.770570107486098e-05
+cat__profile_name_UNP 250x90,4.5685341226711147e-05
+cat__profile_name_UB 248x124,6.026216607153941e-06
+cat__profile_name_UB 150x75,1.0003128514274547e-06
+num__roll_shop_stop_min,0.0
+cat__profile_name_IWF 194x150,0.0
+cat__profile_name_IWF 298x149,0.0

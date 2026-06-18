@@ -1,0 +1,85 @@
+{
+  "target": "wip_ton",
+  "selection_metric": "mae",
+  "best_result": {
+    "model": "extra_trees",
+    "rmse": 102.85171301097682,
+    "mae": 78.06802733260095,
+    "r2": 0.17090935089964432,
+    "baseline_mean_rmse": 117.11224897981897,
+    "baseline_mean_mae": 89.3909259259259,
+    "baseline_mean_r2": -0.07493845701329227,
+    "baseline_median_rmse": 113.12207651225486,
+    "baseline_median_mae": 76.14277777777778,
+    "baseline_median_r2": -0.002937097166069602,
+    "rmse_improvement_vs_mean": 14.260535968842149,
+    "mae_improvement_vs_mean": 11.32289859332495,
+    "r2_improvement_vs_mean": 0.2458478079129366,
+    "rmse_improvement_vs_median": 10.270363501278041,
+    "mae_improvement_vs_median": -1.9252495548231678,
+    "r2_improvement_vs_median": 0.17384644806571392,
+    "params": "{\"n_estimators\": 300, \"max_depth\": 4, \"min_samples_leaf\": 1, \"max_features\": 0.7, \"bootstrap\": true}"
+  },
+  "rows_train": 81,
+  "rows_holdout": 18,
+  "train_date_min": "2025-01-22",
+  "train_date_max": "2025-08-15",
+  "holdout_date_min": "2025-09-15",
+  "holdout_date_max": "2025-09-23",
+  "train_target_summary": {
+    "mean": 130.73333333333332,
+    "median": 93.69,
+    "min": 0.71,
+    "max": 713.53
+  },
+  "holdout_target_summary": {
+    "mean": 99.81166666666667,
+    "median": 70.03999999999999,
+    "min": 0.0,
+    "max": 475.02
+  },
+  "baseline_mean_metrics": {
+    "rmse": 117.11224897981897,
+    "mae": 89.3909259259259,
+    "r2": -0.07493845701329227
+  },
+  "baseline_median_metrics": {
+    "rmse": 113.12207651225486,
+    "mae": 76.14277777777778,
+    "r2": -0.002937097166069602
+  },
+  "numeric_features": [
+    "raw_material_ton",
+    "production_ton",
+    "material_pcs",
+    "production_pcs",
+    "total_hrs",
+    "availables_hrs",
+    "setup_time",
+    "program_stop_min",
+    "stand_change",
+    "production_stop_min",
+    "mechanic_stop_min",
+    "electric_stop_min",
+    "roll_shop_stop_min",
+    "test_rolling_stop_min",
+    "trial_rolling_stop_min",
+    "others_stop_min",
+    "downtime_total_min",
+    "rolling_hot_hrs",
+    "idle_hrs",
+    "rolling_hrs",
+    "gas_total_day_nm3",
+    "kv_20",
+    "kv_33",
+    "electricity_total_kwh"
+  ],
+  "categorical_features": [
+    "profile_name"
+  ],
+  "trials_per_model": {
+    "extra_trees": 108,
+    "random_forest": 54,
+    "xgboost": 80
+  }
+}

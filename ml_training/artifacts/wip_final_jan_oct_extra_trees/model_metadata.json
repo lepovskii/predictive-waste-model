@@ -1,0 +1,93 @@
+{
+  "model_purpose": "Final training model for WIP ton prediction",
+  "target": "wip_ton",
+  "algorithm": "ExtraTreesRegressor",
+  "model_params": {
+    "n_estimators": 300,
+    "max_depth": 4,
+    "min_samples_leaf": 1,
+    "max_features": 0.7,
+    "bootstrap": true,
+    "random_state": 42
+  },
+  "features": {
+    "numeric": [
+      "raw_material_ton",
+      "production_ton",
+      "material_pcs",
+      "production_pcs",
+      "total_hrs",
+      "availables_hrs",
+      "setup_time",
+      "program_stop_min",
+      "stand_change",
+      "production_stop_min",
+      "mechanic_stop_min",
+      "electric_stop_min",
+      "roll_shop_stop_min",
+      "test_rolling_stop_min",
+      "trial_rolling_stop_min",
+      "others_stop_min",
+      "downtime_total_min",
+      "rolling_hot_hrs",
+      "idle_hrs",
+      "rolling_hrs",
+      "gas_total_day_nm3",
+      "kv_20",
+      "kv_33",
+      "electricity_total_kwh"
+    ],
+    "categorical": [
+      "profile_name"
+    ],
+    "all_input_columns": [
+      "profile_name",
+      "raw_material_ton",
+      "production_ton",
+      "material_pcs",
+      "production_pcs",
+      "total_hrs",
+      "availables_hrs",
+      "setup_time",
+      "program_stop_min",
+      "stand_change",
+      "production_stop_min",
+      "mechanic_stop_min",
+      "electric_stop_min",
+      "roll_shop_stop_min",
+      "test_rolling_stop_min",
+      "trial_rolling_stop_min",
+      "others_stop_min",
+      "downtime_total_min",
+      "rolling_hot_hrs",
+      "idle_hrs",
+      "rolling_hrs",
+      "gas_total_day_nm3",
+      "kv_20",
+      "kv_33",
+      "electricity_total_kwh"
+    ]
+  },
+  "data_report": {
+    "csv_path": ".\\ml_training\\dataset_completed - super_final_jan_oct.csv",
+    "original_rows": 115,
+    "rows_used": 115,
+    "date_min": "2025-01-22",
+    "date_max": "2025-10-30",
+    "unique_dates": 71,
+    "unique_profiles": 22,
+    "dropped_leakage_columns_present": [],
+    "target_summary": {
+      "min": 0.37,
+      "max": 713.53,
+      "mean": 126.12269565217392,
+      "median": 89.49,
+      "std": 132.83968322440757
+    }
+  },
+  "postprocess": {
+    "clip_negative_prediction_to_zero": true,
+    "reason": "WIP ton cannot be negative in production context."
+  },
+  "important_note": "This artifact is trained on Jan-Oct data after model selection and tuning. Do not use this report as final performance evaluation. Final performance must be measured on untouched Nov-Dec test data."
+}
