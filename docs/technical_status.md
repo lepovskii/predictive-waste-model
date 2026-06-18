@@ -1,20 +1,20 @@
-﻿# Technical Status
+# Technical Status
 
-_Last updated: 2026-06-10_
+_Last updated: 2026-06-18_
 
 ## Project Overview
 
 This project is a **predictive waste model system** for estimating steel production WIP quality output.
 
-The system currently focuses on predicting:
+The current prediction target is:
 
 ```text
 wip_ton
 ```
 
-The prediction result is stored per production profile and summarized at daily production level.
+The system predicts WIP at profile level, summarizes the result at daily production level, stores the result in PostgreSQL, and allows later reconciliation against actual WIP values.
 
-The system is **not positioned as a decision support system**, but as a prediction component for production quality monitoring.
+The system is **not positioned as a decision support system**. It is a prediction and monitoring component for production quality analysis.
 
 ---
 
@@ -22,17 +22,18 @@ The system is **not positioned as a decision support system**, but as a predicti
 
 | Phase | Status | Notes |
 |---|---|---|
-| Phase 0 - Environment Setup | Done | Docker Compose includes PostgreSQL and Redis. Backend and frontend scaffold exist. |
+| Phase 0 - Environment Setup | Done | Docker Compose includes PostgreSQL and Redis. Backend and frontend environments are runnable locally. |
 | Phase 1 - Database Schema & Migration | Done | SQLAlchemy models and Alembic migrations are available and applied. |
-| Phase 2 - Model Training & Artifact | Done | Final Extra Trees model has been trained and tested. |
-| Phase 3 - FastAPI Core | Done | API can accept prediction requests and write to PostgreSQL. |
-| Phase 4 - Celery + Redis Integration | Done | Celery worker runs WIP prediction asynchronously and updates database. |
+| Phase 2 - Model Training & Artifact | Done | Final Extra Trees model has been trained, tested, and integrated. |
+| Phase 3 - FastAPI Core | Done | API accepts prediction requests, validates payloads, writes to PostgreSQL, and returns status data. |
+| Phase 4 - Celery + Redis Integration | Done | Celery worker runs WIP inference asynchronously and updates database records. |
 | Phase 5 - Sweeper & Fault Tolerance | Done | APScheduler sweeper marks stale PROCESSING logs as FAILED. Manual and automatic stale-task scenarios were verified. |
-| Backend Adapter Layer | Done | CSV preview adapter supports raw GYS company format and canonical CSV format. |
+| Backend Adapter Layer | Done | CSV preview adapter supports raw GYS company format and canonical process CSV format. |
 | Batch Prediction Endpoint | Done | `/predict/batch` accepts multiple normalized prediction payloads and returns per-date results. |
-| Phase 6 - Frontend | Pending | Next.js scaffold exists, but app UI is not implemented yet. |
-| Phase 7 - Full Docker Stack | Pending | FastAPI, Celery, and frontend are not yet containerized as application services. |
-| Phase 8 - Documentation & Thesis Prep | In Progress | ML experiment artifacts and technical notes are available and being updated. |
+| Reconciliation Endpoint | Done | `/reconcile` stores actual WIP/prime values and updates status to RECONCILED when valid. |
+| Phase 6 - Frontend Next.js | Done | Main UI flows are implemented: overview, upload, batch prediction, manual prediction, history, detail, and reconciliation. |
+| Phase 7 - Full Docker Stack | Pending | FastAPI, Celery, and Next.js still need production/staging Docker service definitions. |
+| Phase 8 - Documentation & Thesis Prep | In Progress | Technical status and ML experiment notes are maintained for thesis reporting. |
 
 ---
 
@@ -41,7 +42,8 @@ The system is **not positioned as a decision support system**, but as a predicti
 Current single-day prediction flow:
 
 ```text
-POST /predict
+Frontend / API Client
+-> POST /predict
 -> FastAPI validates payload with Pydantic
 -> FastAPI inserts daily_production_logs and daily_profile_details
 -> FastAPI dispatches Celery task predict_wip(task_id)
@@ -51,53 +53,50 @@ POST /predict
 -> GET /status/{task_id} returns prediction result
 ```
 
-Current CSV adapter preview flow:
+Current CSV batch flow:
 
 ```text
-POST /adapter/preview
--> FastAPI receives CSV upload
--> CSV adapter detects file format
--> CSV adapter normalizes headers, dates, numeric values, and production rows
--> CSV adapter ignores output/leakage columns
--> CSV adapter returns normalized_payloads compatible with /predict or /predict/batch
+Frontend upload page
+-> POST /adapter/preview
+-> CSV adapter detects and normalizes file
+-> frontend shows preview status, issues, and normalized payloads
+-> POST /predict/batch
+-> FastAPI inserts accepted production dates
+-> Celery runs one prediction task per accepted date
+-> frontend polls /status/{task_id}
+-> result table displays DRAFT/FAILED/RECONCILED states
 ```
 
-Current batch prediction flow:
+Current reconciliation flow:
 
 ```text
-POST /predict/batch
--> FastAPI receives multiple PredictRequest items
--> each production_date is inserted independently
--> each accepted item dispatches one Celery task
--> response returns ACCEPTED, DUPLICATE, or FAILED per production_date
+Prediction detail page
+-> user inputs actual WIP and optional actual prime
+-> POST /reconcile
+-> backend validates actual values
+-> backend updates aktual_wip, aktual_prime, absolute error, and needs_retraining flag
+-> status changes to RECONCILED
 ```
 
 High-level architecture:
 
 ```text
-Client / Swagger UI / Future Frontend
+Next.js Frontend
 -> FastAPI
 -> PostgreSQL
 -> Celery Worker
 -> ML Pipeline Artifact
 -> PostgreSQL
--> GET /status/{task_id}
+-> Next.js status/result views
 ```
 
-Redis is used as:
+Runtime infrastructure:
 
 ```text
-Celery broker
-Celery result backend
+PostgreSQL = source of truth
+Redis = Celery broker and result backend
+APScheduler = stale PROCESSING row sweeper
 ```
-
-APScheduler is used inside FastAPI for:
-
-```text
-stale PROCESSING row sweeping
-```
-
-Prediction results are persisted directly to PostgreSQL.
 
 ---
 
@@ -133,7 +132,7 @@ Interpretation:
 
 **The model outperformed both mean and median baselines** on untouched Nov-Dec final test data.
 
-However, the model still tends to underpredict extreme WIP values.
+However, the model still tends to underpredict extreme WIP values. This limitation is documented and should be explained during evaluation.
 
 ---
 
@@ -147,9 +146,11 @@ backend/app/api/routes.py
 backend/app/api/adapter_routes.py
 backend/app/schemas/prediction.py
 backend/app/schemas/adapter.py
+backend/app/schemas/reconciliation.py
 backend/app/services/production_service.py
 backend/app/services/ml_service.py
 backend/app/services/csv_adapter_service.py
+backend/app/services/reconciliation_service.py
 backend/app/services/sweeper_service.py
 backend/app/tasks/prediction_tasks.py
 backend/app/core/database.py
@@ -164,15 +165,17 @@ Module responsibilities:
 | Module | Responsibility |
 |---|---|
 | `main.py` | Creates the FastAPI app, registers API routes, and starts/stops scheduler lifespan |
-| `routes.py` | Defines `/health`, `/predict`, `/predict/batch`, and `/status/{task_id}` endpoints |
+| `routes.py` | Defines prediction, batch, status, history, and reconciliation endpoints |
 | `adapter_routes.py` | Defines `/adapter/preview` CSV upload endpoint |
-| `prediction.py` | Defines prediction request and response validation schemas, including batch schemas |
+| `prediction.py` | Defines prediction request and response validation schemas |
 | `adapter.py` | Defines adapter preview response contract and issue reporting schemas |
-| `production_service.py` | Handles database insert and lookup logic |
+| `reconciliation.py` | Defines actual WIP reconciliation request and response schemas |
+| `production_service.py` | Handles database insert, duplicate checks, and prediction history lookup |
 | `ml_service.py` | Loads model artifact and prepares model input DataFrame |
 | `csv_adapter_service.py` | Parses raw/canonical CSV files into normalized prediction payloads |
+| `reconciliation_service.py` | Applies actual values and calculates reconciliation result |
 | `sweeper_service.py` | Finds stale PROCESSING rows and marks them FAILED |
-| `prediction_tasks.py` | Defines Celery tasks including `predict_wip` |
+| `prediction_tasks.py` | Defines Celery task `predict_wip` |
 | `database.py` | Defines SQLAlchemy engine and session |
 | `celery_app.py` | Defines Celery app using Redis |
 | `config.py` | Reads environment variables |
@@ -189,117 +192,9 @@ Module responsibilities:
 | POST | `/predict` | Accept one normalized production payload, insert database rows, and dispatch Celery task |
 | POST | `/predict/batch` | Accept multiple normalized production payloads and submit each date independently |
 | GET | `/status/{task_id}` | Return processing or prediction status |
+| GET | `/predictions` | Return paginated prediction history with optional filters |
+| POST | `/reconcile` | Store actual WIP values and reconcile prediction results |
 | POST | `/adapter/preview` | Upload CSV and preview normalized prediction payloads without inserting database rows |
-
----
-
-## API Flow
-
-### POST /predict
-
-The endpoint receives one normalized JSON payload.
-
-It performs:
-
-```text
-Pydantic validation
--> duplicate production_date check
--> insert daily_production_logs
--> insert daily_profile_details
--> dispatch predict_wip task to Celery
--> return 202 Accepted
-```
-
-Initial status:
-
-```text
-PROCESSING
-```
-
-If Celery dispatch succeeds, the worker processes the prediction asynchronously.
-
-If Celery dispatch fails, the log is marked as:
-
-```text
-FAILED
-```
-
-### POST /predict/batch
-
-The endpoint receives:
-
-```text
-items: list[PredictRequest]
-```
-
-It performs:
-
-```text
-validate duplicate production_date inside batch
--> process each item independently
--> insert accepted production dates
--> dispatch one Celery task per accepted date
--> return per-date result
-```
-
-Possible item results:
-
-| Result | Meaning |
-|---|---|
-| `ACCEPTED` | Row was inserted and Celery task was dispatched |
-| `DUPLICATE` | Production date already exists in database |
-| `FAILED` | Row was inserted but Celery dispatch failed |
-
-Batch endpoint uses partial success behavior.
-
-Example:
-
-```text
-12 items submitted
-10 accepted
-2 duplicate
-0 failed
-```
-
-### GET /status/{task_id}
-
-This endpoint returns:
-
-```text
-task_id
-status
-production_date
-total_output_ton
-estimasi_wip_total
-estimasi_prime
-profile-level predicted_wip_ton
-```
-
-### POST /adapter/preview
-
-The endpoint receives one CSV file upload.
-
-It performs:
-
-```text
-file extension validation
--> file size validation
--> CSV parsing
--> format detection
--> column mapping
--> value normalization
--> row filtering
--> PredictRequest validation
--> returns normalized_payloads and adapter issues
-```
-
-The endpoint is read-only:
-
-```text
-no database insert
-no Celery dispatch
-no prediction execution
-```
 
 ---
 
@@ -380,6 +275,55 @@ electricity_total_kwh
 
 ---
 
+## Frontend Modules
+
+Current frontend pages:
+
+```text
+frontend/src/app/page.tsx
+frontend/src/app/upload/page.tsx
+frontend/src/app/manual/page.tsx
+frontend/src/app/predictions/page.tsx
+frontend/src/app/predictions/[taskId]/page.tsx
+```
+
+Main frontend components:
+
+```text
+frontend/src/components/layout/
+frontend/src/components/upload/
+frontend/src/components/manual/
+frontend/src/components/prediction/
+frontend/src/components/common/
+```
+
+Implemented frontend flows:
+
+| Flow | Status | Notes |
+|---|---|---|
+| Overview dashboard | Done | Shows system purpose, model snapshot, quick actions, workflow, and academic disclaimer |
+| CSV upload preview | Done | Uploads CSV to `/adapter/preview` and shows VALID/WARNING/INVALID results |
+| Batch prediction | Done | Submits normalized payloads to `/predict/batch` |
+| Prediction polling | Done | Polls `/status/{task_id}` until final status |
+| Prediction results table | Done | Displays output, estimated WIP, estimated prime, profile count, and status |
+| Manual prediction form | Done | Allows direct JSON-compatible production input without CSV |
+| Prediction history | Done | Shows paginated history from `/predictions` with status/date filters |
+| Prediction detail page | Done | Shows daily summary, profile-level predictions, and reconciliation form |
+| Reconciliation form | Done | Sends actual WIP/prime to `/reconcile` |
+| Responsive layout | Done | Desktop sidebar and mobile top navigation are implemented |
+
+Frontend design direction:
+
+```text
+clean industrial operations dashboard
+warm neutral background
+green/terracotta accent palette
+monospace value text for numeric/status data
+clear operational cards and tables
+```
+
+---
+
 ## Database Tables
 
 ### daily_production_logs
@@ -453,8 +397,8 @@ Implemented states:
 PROCESSING -> DRAFT
 PROCESSING -> ANOMALY
 PROCESSING -> FAILED
-DRAFT -> RECONCILED (reserved for future reconciliation)
-ANOMALY -> RECONCILED (reserved for future reconciliation)
+DRAFT -> RECONCILED
+ANOMALY -> RECONCILED
 ```
 
 Status meaning:
@@ -462,10 +406,10 @@ Status meaning:
 | Status | Meaning |
 |---|---|
 | `PROCESSING` | Request has been accepted and Celery task should process it |
-| `DRAFT` | Prediction completed successfully |
+| `DRAFT` | Prediction completed successfully and awaits actual reconciliation |
 | `ANOMALY` | Predicted WIP exceeds total production output |
 | `FAILED` | Task dispatch, prediction, or stale processing failure |
-| `RECONCILED` | Reserved for future actual CSV reconciliation |
+| `RECONCILED` | Actual WIP/prime values have been stored and compared with prediction |
 
 Sweeper protection:
 
@@ -494,6 +438,18 @@ unknown extra fields
 duplicate production_date in database
 ```
 
+The reconciliation API rejects:
+
+```text
+duplicate production_date in one reconciliation request
+negative actual_wip_ton
+negative actual_prime_ton
+duplicate profile_name inside reconciliation profiles
+profile-level actual WIP total that does not match daily actual_wip_ton
+reconciliation for missing production_date
+reconciliation for FAILED/PROCESSING rows
+```
+
 The adapter rejects or marks invalid:
 
 ```text
@@ -506,42 +462,95 @@ no accepted production rows
 invalid PredictRequest payload after normalization
 ```
 
-The adapter skips as non-blocking INFO:
-
-```text
-Shutdown rows
-footer rows
-TOTAL rows
-blank artifact rows
-#REF! artifact rows
-```
-
-The adapter may warn but still allow prediction:
-
-```text
-optional feature defaulted to 0
-energy total mismatch
-valid CSV with minor non-blocking issues
-```
-
-The database enforces:
-
-```text
-production_date unique
-profile_name != Shutdown
-production_ton >= 0
-raw_material_ton >= 0
-predicted_wip_ton >= 0 or NULL
-actual_wip_ton >= 0 or NULL
-```
-
 ---
 
 ## Current Verified Flows
 
-### Single Prediction Flow
+### Local Integration Test - 2026-06-18
 
-The following end-to-end flow has been verified:
+Integration test was run with local services active:
+
+```text
+PostgreSQL
+Redis
+FastAPI
+Celery Worker
+Next.js frontend dev server
+```
+
+Happy-path result:
+
+| Area | Result |
+|---|---|
+| Backend health | `ok` |
+| Frontend dev server | HTTP `200` |
+| `POST /predict` | Accepted and completed |
+| Celery inference | Completed and updated database |
+| `GET /status/{task_id}` | Returned DRAFT result |
+| `POST /predict/batch` | 2 items accepted |
+| Batch polling | 2 tasks completed as DRAFT |
+| `GET /predictions` | Returned paginated history |
+| `POST /reconcile` | Updated one prediction to RECONCILED |
+| `POST /adapter/preview` | Dummy CSV returned VALID |
+
+Verified test records:
+
+| Production Date | Final Status | Notes |
+|---|---|---|
+| 2031-05-19 | `RECONCILED` | Single prediction then reconciliation |
+| 2031-05-20 | `DRAFT` | Batch prediction item |
+| 2031-05-21 | `DRAFT` | Batch prediction item |
+
+Negative-path result:
+
+| Case | Expected Result | Verified Result |
+|---|---|---|
+| Duplicate production_date | HTTP `409` | Passed |
+| Profile name `Shutdown` | HTTP `422` | Passed |
+| Missing task id | HTTP `404` | Passed |
+| Invalid CSV adapter preview | `INVALID`, `is_valid_for_prediction=false` | Passed |
+
+### Build and Code Health
+
+Frontend checks:
+
+```text
+npm.cmd run lint
+npx.cmd tsc --noEmit
+npm.cmd run build
+```
+
+Result:
+
+```text
+passed
+```
+
+Backend check:
+
+```text
+.\venv\Scripts\python.exe -m compileall app
+```
+
+Result:
+
+```text
+passed
+```
+
+Next.js production build routes:
+
+```text
+/
+/manual
+/upload
+/predictions
+/predictions/[taskId]
+```
+
+### Previously Verified Backend Flows
+
+Single prediction flow was verified before frontend completion:
 
 ```text
 POST /predict
@@ -553,23 +562,7 @@ POST /predict
 -> GET /status/{task_id} returned DRAFT status and predicted_wip_ton values
 ```
 
-Example verified result:
-
-| Production Date | Status | Total Output | Estimated WIP | Estimated Prime |
-|---|---|---:|---:|---:|
-| 2026-01-02 | DRAFT | 1251.82 | 364.55 | 887.27 |
-| 2026-01-03 | DRAFT | 1251.82 | 364.55 | 887.27 |
-
-Example profile-level prediction:
-
-| Profile | Production Ton | Predicted WIP |
-|---|---:|---:|
-| IWF 250x125 | 771.72 | 186.28 |
-| IWF 200x100 | 480.10 | 178.27 |
-
-### Sweeper Flow
-
-Manual stale-row test was verified:
+Sweeper flow was verified:
 
 ```text
 create PROCESSING row
@@ -578,7 +571,7 @@ create PROCESSING row
 -> row status changed to FAILED
 ```
 
-Automatic scheduler test was verified:
+Automatic scheduler flow was verified:
 
 ```text
 create PROCESSING row
@@ -593,46 +586,9 @@ Verified failed task example:
 task_id = 23faad8a-2a47-4bd1-ae41-40e8aa4edfa5
 ```
 
-Current stable sweeper config:
-
-```env
-SWEEPER_ENABLED=true
-SWEEPER_INTERVAL_SECONDS=60
-PROCESSING_TIMEOUT_MINUTES=10
-```
-
-### Adapter Preview Flow
-
-Verified raw GYS default company files:
-
-| File | Detected Format | Status | Valid | Accepted Rows | Accepted Days | Warning | Error |
-|---|---|---|---:|---:|---:|---:|---:|
-| November 2025 raw GYS | `gys_lsm_daily_prod_report` | `VALID` | true | 17 | 12 | 0 | 0 |
-| December 2025 raw GYS | `gys_lsm_daily_prod_report` | `VALID` | true | 7 | 5 | 0 | 0 |
-
-Verified canonical CSV examples:
-
-| File | Detected Format | Status | Valid | Notes |
-|---|---|---|---:|---|
-| `gys_dummy.csv` | `canonical_process_csv_v1` | `WARNING` | true | Some optional features defaulted to 0 |
-| `dataset_completed - new_completed_wip_ton.csv` | `canonical_process_csv_v1` | `WARNING` | true | 99 accepted rows, 1 energy mismatch warning |
-| `janjan.csv` | `canonical_process_csv_v1` | `INVALID` | false | Missing required columns: `availables_hrs`, `material_pcs`, `production_pcs`, `total_hrs` |
-
 ---
 
-## Runtime Services
-
-Current runtime dependencies:
-
-| Service | Purpose |
-|---|---|
-| PostgreSQL | Main persistent database |
-| Redis | Celery broker and result backend |
-| FastAPI | API gateway |
-| Celery Worker | Background ML inference worker |
-| APScheduler | In-process scheduled sweeper job |
-
-Local runtime commands:
+## Runtime Commands
 
 ### Start Docker Services
 
@@ -654,6 +610,13 @@ cd backend
 .\venv\Scripts\celery.exe -A app.core.celery_app.celery_app worker --loglevel=info --pool=solo
 ```
 
+### Start Frontend
+
+```powershell
+cd frontend
+npm.cmd run dev
+```
+
 ### Check Alembic Current Revision
 
 ```powershell
@@ -667,23 +630,6 @@ Expected current revision:
 f3c9a2d8b741
 ```
 
-### Check Registered FastAPI Routes
-
-```powershell
-cd backend
-.\venv\Scripts\python.exe -B -c "from app.main import app; [print(route.path) for route in app.routes]"
-```
-
-Implemented business routes:
-
-```text
-/health
-/predict
-/predict/batch
-/status/{task_id}
-/adapter/preview
-```
-
 ---
 
 ## Environment Variables
@@ -694,15 +640,15 @@ Backend environment file:
 backend/.env
 ```
 
-Important variables:
+Example variables:
 
 ```env
 BACKEND_PORT=8000
-SECRET_KEY=backendskripsi
+SECRET_KEY=change-me
 MODEL_ARTIFACT_PATH=ml_training/artifacts/wip_final_jan_oct_extra_trees/pipeline.pkl
 
-POSTGRES_USER=skripsi_ardy
-POSTGRES_PASSWORD=ardy12345
+POSTGRES_USER=skripsi_user
+POSTGRES_PASSWORD=change-me
 POSTGRES_DB=predictive_waste
 POSTGRES_HOST=localhost
 POSTGRES_PORT=5432
@@ -713,6 +659,18 @@ REDIS_PORT=6379
 SWEEPER_ENABLED=true
 SWEEPER_INTERVAL_SECONDS=60
 PROCESSING_TIMEOUT_MINUTES=10
+```
+
+Frontend environment file:
+
+```text
+frontend/.env
+```
+
+Example variable:
+
+```env
+BACKEND_API_URL=http://127.0.0.1:8000
 ```
 
 Important note:
@@ -731,32 +689,62 @@ ml_training/artifacts/wip_final_jan_oct_extra_trees/pipeline.pkl
 
 ---
 
-## Dependencies
+## Repository Hygiene
 
-Important backend dependencies:
+Current repository preparation:
 
 ```text
-fastapi
-uvicorn
-sqlalchemy
-alembic
-psycopg2-binary
-celery
-redis
-pydantic
-pydantic-settings
-pandas
-numpy
-scikit-learn
-xgboost
-joblib
-python-dotenv
-httpx
-apscheduler
-python-multipart
+dataset CSV files were moved out of ml_training
+archive_artifacts is local backup and should not be committed
+.env files should not be committed
+model artifacts are currently included for reproducible local inference
 ```
 
-`python-multipart` is required for CSV upload via FastAPI `UploadFile`.
+Recommended `.gitignore` protection:
+
+```gitignore
+**/.env
+archive_artifacts/
+ml_training/*.csv
+```
+
+Public repository caution:
+
+```text
+The repository includes ML artifacts and experiment prediction CSV files.
+For company-related data governance, private repository is safer than public repository.
+```
+
+---
+
+## Deployment Direction
+
+Recommended staging deployment for usability testing:
+
+```text
+single low-cost VPS
+Docker Compose
+PostgreSQL container or managed PostgreSQL
+Redis container
+FastAPI container
+Celery worker container
+Next.js container
+reverse proxy with HTTPS if public access is needed
+```
+
+Vercel-only deployment is not recommended for the full system because the project needs:
+
+```text
+persistent backend service
+Celery worker
+Redis broker
+PostgreSQL
+ML artifact loading
+CSV upload handling
+background processing
+```
+
+Vercel can be used for frontend only, but for thesis usability testing, a single VPS with Docker Compose is simpler and closer to the project architecture.
 
 ---
 
@@ -774,30 +762,32 @@ profile-level prediction
 PostgreSQL persistence
 Celery async inference
 stale PROCESSING failure protection
+manual actual WIP reconciliation
+frontend upload, manual input, history, detail, and reconcile pages
 ```
 
 The system does not yet support:
 
 ```text
-actual WIP reconciliation upload
+full production Docker Compose app stack
+role-based authentication
+real company user management
+automatic retraining pipeline
 automatic database update from adapter preview without user confirmation
-frontend CSV preview UI
-frontend batch submit UI
-full Dockerized FastAPI/Celery/frontend app services
+arbitrary unknown company CSV layouts outside known GYS/canonical patterns
 ```
 
 ---
 
 ## Known Limitations
 
-Current technical limitations:
+Technical limitations:
 
 ```text
-Reconciliation endpoint is not implemented yet.
 Automated pytest tests are not implemented yet.
-Frontend is not integrated yet.
-FastAPI, Celery, and frontend are not yet containerized as app services.
-Adapter submit flow still requires frontend or client to call /predict/batch after preview.
+FastAPI, Celery, and frontend are not yet containerized as production app services.
+Adapter submit flow still requires frontend/client confirmation before /predict/batch.
+No authentication or RBAC is implemented yet.
 ```
 
 ML limitations:
@@ -825,35 +815,40 @@ Energy consistency checks are heuristic and intended as warning only.
 Next planned phase:
 
 ```text
-Phase 6 - Frontend Next.js Integration
+Phase 7 - Full Docker Compose Stack and Deployment Preparation
 ```
 
-Frontend goals:
+Recommended next work:
 
 ```text
-CSV upload page
-adapter preview table
-accepted/skipped/warning/error summary
-batch submit to /predict/batch
-status polling via /status/{task_id}
-dashboard for prediction results
-basic role separation for QA/QC and PPIC if needed
+create Dockerfile for FastAPI
+create Dockerfile for Celery worker or reuse backend image
+create Dockerfile for Next.js frontend
+update docker-compose.yml with application services
+configure health checks and service dependencies
+test docker compose up end-to-end
+prepare VPS staging deployment plan
+prepare usability testing checklist for company staff
 ```
 
-Before or during frontend work, recommended supporting work:
+Before deployment, recommended manual browser smoke test:
 
 ```text
-update technical documentation
-add endpoint usage examples
-add minimal backend tests for adapter and batch routes
-prepare demo CSV files for happy path and warning path
+open frontend
+upload CSV
+preview adapter result
+submit batch prediction
+wait for prediction results
+open prediction detail
+submit reconciliation
+verify history/filter result
 ```
 
 ---
 
 ## Summary
 
-Current backend status:
+Current system status:
 
 ```text
 FastAPI Core: working
@@ -864,12 +859,18 @@ ML Artifact Loading: working
 Async Prediction Flow: working
 Sweeper & Fault Tolerance: working
 CSV Adapter Preview: working
-Batch Prediction Endpoint: implemented
+Batch Prediction Endpoint: working
+Reconciliation Endpoint: working
+Frontend Main Flow: working
+Frontend Production Build: passing
+Local Integration Test: passing
 ```
 
 The project is ready to proceed to:
 
 ```text
-technical documentation finalization
-frontend implementation
+manual browser smoke testing
+full Docker Compose stack
+staging deployment preparation
+usability testing with company staff
 ```
