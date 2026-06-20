@@ -1,6 +1,10 @@
 # Environment
 .env
 .env.local
+**/.env
+**/.env.local
+.env.staging
+.env.production
 
 # Python
 __pycache__/
@@ -11,6 +15,7 @@ venv/
 
 # Private datasets
 ml_training/*.csv
+archive_artifacts/
 
 # Node / Frontend
 node_modules/
