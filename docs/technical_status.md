@@ -1,6 +1,6 @@
 # Technical Status
 
-_Last updated: 2026-06-18_
+_Last updated: 2026-06-25_
 
 ## Project Overview
 
@@ -15,6 +15,29 @@ wip_ton
 The system predicts WIP at profile level, summarizes the result at daily production level, stores the result in PostgreSQL, and allows later reconciliation against actual WIP values.
 
 The system is **not positioned as a decision support system**. It is a prediction and monitoring component for production quality analysis.
+
+From a research framing perspective, this project is best described as a **machine-learning-enabled software engineering project**.
+
+Approximate research weight:
+
+| Area | Estimated Weight | Explanation |
+|---|---:|---|
+| Software engineering | 65-70% | Backend, database, async worker, adapter layer, frontend, deployment, reconciliation, and system reliability |
+| Data science / ML | 30-35% | Dataset preparation, feature selection, model comparison, tuning, final testing, and artifact integration |
+
+The system is evaluated using both quantitative and qualitative perspectives:
+
+| Evaluation Type | Purpose |
+|---|---|
+| Quantitative evaluation | Measure model performance using RMSE, MAE, R2, baseline comparison, and final test results |
+| Functional evaluation | Verify API, Celery, database, adapter, frontend, batch prediction, and reconciliation flows |
+| Qualitative evaluation | Collect Subject Matter Expert feedback about operational fit, input workflow, result interpretation, and practical usability |
+
+Safe academic framing:
+
+```text
+The research evaluates the ML model quantitatively, while also evaluating the implemented software system through functional testing and Subject Matter Expert validation.
+```
 
 ---
 
@@ -32,8 +55,14 @@ The system is **not positioned as a decision support system**. It is a predictio
 | Batch Prediction Endpoint | Done | `/predict/batch` accepts multiple normalized prediction payloads and returns per-date results. |
 | Reconciliation Endpoint | Done | `/reconcile` stores actual WIP/prime values and updates status to RECONCILED when valid. |
 | Phase 6 - Frontend Next.js | Done | Main UI flows are implemented: overview, upload, batch prediction, manual prediction, history, detail, and reconciliation. |
-| Phase 7 - Full Docker Stack | Pending | FastAPI, Celery, and Next.js still need production/staging Docker service definitions. |
-| Phase 8 - Documentation & Thesis Prep | In Progress | Technical status and ML experiment notes are maintained for thesis reporting. |
+| Phase 7 - Full Docker Stack & Staging Deployment | Done for staging | VPS staging deployment was verified with frontend, FastAPI, Celery worker, PostgreSQL, and Redis running through Docker Compose. Production hardening is still a separate future concern. |
+| Phase 8 - Documentation & Thesis Prep | In Progress | Technical status and ML experiment notes are maintained for thesis reporting. SME validation and thesis framing are being prepared. |
+
+Current phase interpretation:
+
+```text
+The main implementation phases are functionally complete for local and staging use. The remaining work is documentation, thesis preparation, SME validation, and optional production hardening.
+```
 
 ---
 
@@ -98,6 +127,25 @@ Redis = Celery broker and result backend
 APScheduler = stale PROCESSING row sweeper
 ```
 
+Staging runtime infrastructure:
+
+```text
+Ubuntu 24.04 VPS
+Docker Engine
+Docker Compose staging stack
+PostgreSQL container
+Redis container
+FastAPI container
+Celery worker container
+Next.js frontend container
+```
+
+Staging deployment purpose:
+
+```text
+The staging environment allows the system to be accessed outside the developer's local machine, so a Subject Matter Expert can test the workflow independently and provide practical feedback without requiring the developer to run a local demo session.
+```
+
 ---
 
 ## Main Model Artifact
@@ -133,6 +181,19 @@ Interpretation:
 **The model outperformed both mean and median baselines** on untouched Nov-Dec final test data.
 
 However, the model still tends to underpredict extreme WIP values. This limitation is documented and should be explained during evaluation.
+
+Current model decision:
+
+| Artifact | Status | Reason |
+|---|---|---|
+| v1 Jan-Oct 2025 Extra Trees | Active artifact | Best final test result and already integrated into backend inference |
+| v2 Cross-Year Extra Trees + log1p | Experiment only | More historical data was used, but final Nov-Dec performance was weaker than v1 |
+
+Important technical note:
+
+```text
+The system is designed so the ML artifact can be replaced as long as the new artifact follows a compatible input-output contract. Feature changes should be isolated in the inference/adapter layer, not spread across the entire system.
+```
 
 ---
 
@@ -588,6 +649,81 @@ task_id = 23faad8a-2a47-4bd1-ae41-40e8aa4edfa5
 
 ---
 
+## Staging Deployment Verification
+
+The system was deployed to a VPS-based staging environment for practical access and external testing.
+
+Staging goal:
+
+```text
+Provide a non-local environment where the system can be accessed by a Subject Matter Expert without depending on the developer's local laptop or demo schedule.
+```
+
+Staging environment:
+
+| Item | Value |
+|---|---|
+| Server type | VPS |
+| Operating system | Ubuntu 24.04 |
+| Deployment method | Docker Compose staging stack |
+| Main services | Frontend, FastAPI API, Celery worker, PostgreSQL, Redis |
+| Frontend exposure | Port 80 |
+| Backend exposure | Localhost binding inside VPS setup |
+
+Verified staging services:
+
+| Service | Verification |
+|---|---|
+| PostgreSQL | Container started and reported healthy |
+| Redis | Container started and reported healthy |
+| FastAPI | Container started and reported healthy |
+| Celery worker | Container started and connected to Redis |
+| Next.js frontend | Container started and returned HTTP 200 |
+
+Verified staging commands/results:
+
+```text
+docker compose --env-file .env.staging -f docker-compose.staging.yml ps
+curl http://127.0.0.1:8000/health
+curl -I http://127.0.0.1
+```
+
+Repository note:
+
+```text
+The staging deployment files were prepared and verified on the deploy/staging-vps branch, including docker-compose.staging.yml, backend/Dockerfile, frontend/Dockerfile, and .env.staging.example.
+```
+
+Observed API health response:
+
+```json
+{
+  "status": "ok",
+  "service": "predictive-waste-api"
+}
+```
+
+Observed frontend response:
+
+```text
+HTTP/1.1 200 OK
+X-Powered-By: Next.js
+```
+
+Academic purpose of staging:
+
+```text
+Staging deployment supports practical validation because the implemented system can be accessed in an environment separate from the developer machine. This allows Subject Matter Expert evaluation of the upload, prediction, result interpretation, and reconciliation workflow.
+```
+
+Important limitation:
+
+```text
+The staging deployment is intended for thesis testing and SME validation. It is not yet a hardened production deployment because authentication, HTTPS/domain configuration, backup strategy, and long-term monitoring are not finalized.
+```
+
+---
+
 ## Runtime Commands
 
 ### Start Docker Services
@@ -717,19 +853,24 @@ For company-related data governance, private repository is safer than public rep
 
 ---
 
-## Deployment Direction
+## Deployment Status and Direction
 
-Recommended staging deployment for usability testing:
+Current deployment status:
+
+```text
+VPS staging deployment has been verified for thesis testing and Subject Matter Expert access.
+```
+
+Implemented staging direction:
 
 ```text
 single low-cost VPS
 Docker Compose
-PostgreSQL container or managed PostgreSQL
+PostgreSQL container
 Redis container
 FastAPI container
 Celery worker container
 Next.js container
-reverse proxy with HTTPS if public access is needed
 ```
 
 Vercel-only deployment is not recommended for the full system because the project needs:
@@ -745,6 +886,23 @@ background processing
 ```
 
 Vercel can be used for frontend only, but for thesis usability testing, a single VPS with Docker Compose is simpler and closer to the project architecture.
+
+Remaining production-hardening items:
+
+```text
+configure domain and HTTPS
+add authentication/RBAC before real public use
+prepare database backup and restore plan
+configure server firewall more strictly
+add log rotation and monitoring
+decide whether PostgreSQL remains containerized or moves to managed database
+```
+
+Academic interpretation:
+
+```text
+The VPS staging environment is sufficient to demonstrate deployability and practical accessibility for thesis validation. It should not be overclaimed as full production readiness.
+```
 
 ---
 
@@ -769,12 +927,12 @@ frontend upload, manual input, history, detail, and reconcile pages
 The system does not yet support:
 
 ```text
-full production Docker Compose app stack
 role-based authentication
 real company user management
 automatic retraining pipeline
 automatic database update from adapter preview without user confirmation
 arbitrary unknown company CSV layouts outside known GYS/canonical patterns
+hardened production deployment with HTTPS, domain, backups, and monitoring
 ```
 
 ---
@@ -785,7 +943,7 @@ Technical limitations:
 
 ```text
 Automated pytest tests are not implemented yet.
-FastAPI, Celery, and frontend are not yet containerized as production app services.
+Containerized staging deployment has been verified, but production hardening is not complete.
 Adapter submit flow still requires frontend/client confirmation before /predict/batch.
 No authentication or RBAC is implemented yet.
 ```
@@ -815,23 +973,22 @@ Energy consistency checks are heuristic and intended as warning only.
 Next planned phase:
 
 ```text
-Phase 7 - Full Docker Compose Stack and Deployment Preparation
+Phase 8 - Documentation, Thesis Preparation, and SME Validation
 ```
 
 Recommended next work:
 
 ```text
-create Dockerfile for FastAPI
-create Dockerfile for Celery worker or reuse backend image
-create Dockerfile for Next.js frontend
-update docker-compose.yml with application services
-configure health checks and service dependencies
-test docker compose up end-to-end
-prepare VPS staging deployment plan
-prepare usability testing checklist for company staff
+update thesis documentation from technical and ML notes
+prepare system architecture diagram, ERD, sequence diagram, and state diagram
+prepare SME validation checklist
+prepare browser-based staging smoke test scenario
+collect practical feedback from Subject Matter Expert
+document quantitative model evaluation and qualitative system evaluation separately
+prepare production-hardening notes as future work
 ```
 
-Before deployment, recommended manual browser smoke test:
+Recommended manual browser smoke test:
 
 ```text
 open frontend
@@ -842,6 +999,17 @@ wait for prediction results
 open prediction detail
 submit reconciliation
 verify history/filter result
+```
+
+Recommended SME validation focus:
+
+```text
+Is the CSV upload workflow understandable?
+Are VALID/WARNING/INVALID statuses clear enough?
+Does the prediction result table match operational expectations?
+Is the reconciliation workflow practical?
+Are WIP, estimated prime, and status labels understandable for production users?
+What additional explanation would help QA/QC or PPIC users trust the system?
 ```
 
 ---
@@ -864,13 +1032,15 @@ Reconciliation Endpoint: working
 Frontend Main Flow: working
 Frontend Production Build: passing
 Local Integration Test: passing
+VPS Staging Deployment: verified
 ```
 
 The project is ready to proceed to:
 
 ```text
 manual browser smoke testing
-full Docker Compose stack
-staging deployment preparation
-usability testing with company staff
+SME usability/practical validation
+thesis documentation
+diagram preparation
+production-hardening planning
 ```
