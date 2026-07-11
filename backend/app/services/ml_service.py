@@ -26,8 +26,10 @@ def get_active_artifact_id() -> str:
         pass
         
     # Fallback to settings
-    active_path = Path(settings.MODEL_ARTIFACT_PATH)
-    return active_path.parent.name
+    active_path = settings.MODEL_ARTIFACT_PATH
+    if "/" in active_path or "\\" in active_path:
+        return Path(active_path).parent.name
+    return active_path
 
 def get_model_path(artifact_id: str) -> Path:
     return Path(__file__).resolve().parents[3] / "ml_training" / "artifacts" / artifact_id / "pipeline.pkl"

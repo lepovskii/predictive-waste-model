@@ -329,12 +329,12 @@ def build_prediction_history_item(
 
 @router.get("/models", response_model=AvailableModelsResponse)
 def get_available_models():
-    # Base path (3 level di atas routes.py)
+    from app.services.ml_service import get_active_artifact_id
+    
     base_dir = Path(__file__).resolve().parents[3]
     artifacts_dir = base_dir / "ml_training" / "artifacts"
     
-    active_path = Path(settings.MODEL_ARTIFACT_PATH)
-    active_folder_name = active_path.parent.name
+    active_folder_name = get_active_artifact_id()
     
     models = []
     
