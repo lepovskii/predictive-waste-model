@@ -154,7 +154,12 @@ export function PredictionHistoryPage() {
     appliedStatus ? `Status: ${statusLabels[appliedStatus]}` : null,
     appliedDateFrom ? `Dari: ${appliedDateFrom}` : null,
     appliedDateTo ? `Sampai: ${appliedDateTo}` : null,
-    `Urutan: ${appliedSortOrder === "asc" ? "Terlama ke Terbaru" : "Terbaru ke Terlama"}`,
+    `Urutan: ${
+      appliedSortOrder === "activity_desc" ? "Prediksi Terbaru" :
+      appliedSortOrder === "activity_asc" ? "Prediksi Terlama" :
+      appliedSortOrder === "date_desc" ? "Produksi Terbaru" :
+      "Produksi Terlama"
+    }`,
   ].filter(Boolean);
 
   return (
