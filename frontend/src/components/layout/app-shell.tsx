@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 
 import { AppNavigation } from "@/components/layout/app-navigation";
+import { ActiveModelBadge } from "@/components/layout/active-model-badge";
 
 interface AppShellProps {
   children: ReactNode;
@@ -22,9 +23,7 @@ export function AppShell({ children }: AppShellProps) {
             Production intelligence workspace
           </p>
 
-          <p className="rounded-full border border-[#c8cfc9] bg-white/70 px-3 py-1 text-xs font-semibold text-[#42574e]">
-            Model WIP v1
-          </p>
+          <ActiveModelBadge />
         </header>
 
         <main className="relative mx-auto min-h-screen max-w-[1600px] px-4 py-6 sm:px-8 lg:px-10 lg:py-10">

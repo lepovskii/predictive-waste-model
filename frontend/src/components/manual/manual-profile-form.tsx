@@ -5,6 +5,7 @@ interface ManualProfileFormProps {
   profileIndex: number;
   canRemove: boolean;
   disabled: boolean;
+  requiredFeatures: string[] | null;
   onChange: (
     profileId: string,
     field: keyof ManualProfileFormState,
@@ -128,9 +129,14 @@ export function ManualProfileForm({
   profileIndex,
   canRemove,
   disabled,
+  requiredFeatures,
   onChange,
   onRemove,
 }: ManualProfileFormProps) {
+  const isFieldRequired = (fieldName: string) => {
+    if (!requiredFeatures) return true;
+    return requiredFeatures.includes(fieldName);
+  };
   return (
     <article className="rounded-3xl border border-[#d7d2c5] bg-white shadow-[0_18px_45px_rgba(32,45,38,0.06)]">
       <header className="flex flex-wrap items-center justify-between gap-4 border-b border-[#e5e1d7] px-6 py-5">
@@ -175,7 +181,7 @@ export function ManualProfileForm({
               }
             />
 
-            {productionFields.map((definition) => (
+            {productionFields.filter(def => isFieldRequired(def.field)).map((definition) => (
               <NumberField
                 key={definition.field}
                 profile={profile}
@@ -194,7 +200,7 @@ export function ManualProfileForm({
           />
 
           <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {timeFields.map((definition) => (
+            {timeFields.filter(def => isFieldRequired(def.field)).map((definition) => (
               <NumberField
                 key={definition.field}
                 profile={profile}
@@ -225,7 +231,7 @@ export function ManualProfileForm({
           </summary>
 
           <div className="grid gap-4 border-t border-[#dedbd1] p-5 sm:grid-cols-2 lg:grid-cols-4">
-            {downtimeFields.map((definition) => (
+            {downtimeFields.filter(def => isFieldRequired(def.field)).map((definition) => (
               <NumberField
                 key={definition.field}
                 profile={profile}
@@ -248,7 +254,7 @@ export function ManualProfileForm({
 
           <div className="mt-4 grid gap-6 xl:grid-cols-2">
             <FieldGroup title="Gas consumption">
-              {gasFields.map((definition) => (
+              {gasFields.filter(def => isFieldRequired(def.field)).map((definition) => (
                 <NumberField
                   key={definition.field}
                   profile={profile}
@@ -260,7 +266,7 @@ export function ManualProfileForm({
             </FieldGroup>
 
             <FieldGroup title="Electrical consumption">
-              {electricityFields.map((definition) => (
+              {electricityFields.filter(def => isFieldRequired(def.field)).map((definition) => (
                 <NumberField
                   key={definition.field}
                   profile={profile}

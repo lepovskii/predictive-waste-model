@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+import json
+from pathlib import Path
 from datetime import date
+import redis
 from fastapi import (
     APIRouter,
     Depends,
@@ -43,6 +46,16 @@ from app.schemas.reconciliation import (
 )
 from app.services.reconciliation_service import (
     reconcile_predictions,
+)
+
+from app.core.config import settings, update_active_model_path
+from app.services.ml_service import clear_model_cache
+from app.schemas.model_manager import (
+    AvailableModelsResponse,
+    ModelArtifact,
+    ModelMetadata,
+    SwitchModelRequest,
+    SwitchModelResponse,
 )
 
 router = APIRouter()
@@ -176,6 +189,7 @@ def get_prediction_history(
     ),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
+    sort: str = Query(default="activity_desc", pattern="^(activity_desc|activity_asc|date_desc|date_asc)$"),
     db: Session = Depends(get_db),
 ) -> PredictionHistoryResponse:
     if (
@@ -195,6 +209,7 @@ def get_prediction_history(
         status_filter=status_filter,
         date_from=date_from,
         date_to=date_to,
+        sort_order=sort,
     )
 
     return PredictionHistoryResponse(
@@ -270,6 +285,7 @@ def build_prediction_status_response(
 
     return PredictionStatusResponse(
         task_id=log.task_id,
+        model_artifact_id=log.model_artifact_id,
         status=log.status,
         production_date=log.production_date,
         total_output_ton=log.total_output_ton,
@@ -299,6 +315,7 @@ def build_prediction_history_item(
 ) -> PredictionHistoryItemResponse:
     return PredictionHistoryItemResponse(
         task_id=log.task_id,
+        model_artifact_id=log.model_artifact_id,
         status=log.status,
         production_date=log.production_date,
         profile_count=len(log.profile_details),
@@ -308,4 +325,70 @@ def build_prediction_history_item(
         needs_retraining=log.needs_retraining,
         created_at=log.created_at,
         updated_at=log.updated_at,
+    )
+
+@router.get("/models", response_model=AvailableModelsResponse)
+def get_available_models():
+    # Base path (3 level di atas routes.py)
+    base_dir = Path(__file__).resolve().parents[3]
+    artifacts_dir = base_dir / "ml_training" / "artifacts"
+    
+    active_path = Path(settings.MODEL_ARTIFACT_PATH)
+    active_folder_name = active_path.parent.name
+    
+    models = []
+    
+    if artifacts_dir.exists():
+        for folder in artifacts_dir.iterdir():
+            if folder.is_dir():
+                pipeline_path = folder / "pipeline.pkl"
+                metadata_path = folder / "model_metadata.json"
+                
+                # Jika folder memiliki pkl dan json, kita anggap sebagai artifact yang valid
+                if pipeline_path.exists() and metadata_path.exists():
+                    try:
+                        with open(metadata_path, "r", encoding="utf-8") as f:
+                            metadata_dict = json.load(f)
+                            
+                        is_active = (folder.name == active_folder_name)
+                        
+                        models.append(
+                            ModelArtifact(
+                                artifact_id=folder.name,
+                                folder_name=folder.name,
+                                is_active=is_active,
+                                metadata=ModelMetadata(**metadata_dict)
+                            )
+                        )
+                    except Exception:
+                        pass
+                        
+    return AvailableModelsResponse(
+        active_artifact_id=active_folder_name,
+        models=models
+    )
+
+@router.post("/models/switch", response_model=SwitchModelResponse)
+def switch_active_model(payload: SwitchModelRequest):
+    base_dir = Path(__file__).resolve().parents[3]
+    new_artifact_path = f"ml_training/artifacts/{payload.artifact_id}/pipeline.pkl"
+    full_path = base_dir / new_artifact_path
+    
+    if not full_path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Artifact tidak ditemukan di: {new_artifact_path}"
+        )
+        
+    # Update file .env dan hapus cache ML Service agar refresh
+    update_active_model_path(new_artifact_path)
+    clear_model_cache()
+    
+    # Simpan ke Redis agar Celery Worker langsung tahu tanpa restart
+    redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
+    redis_client.set("active_model_artifact_id", payload.artifact_id)
+    
+    return SwitchModelResponse(
+        message=f"Model berhasil diganti ke {payload.artifact_id}",
+        active_artifact_id=payload.artifact_id
     )

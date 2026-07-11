@@ -5,6 +5,8 @@ from decimal import Decimal
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
+from pathlib import Path
+from app.core.config import settings
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.models.waste import DailyProductionLog, ProductionLogStatus
@@ -83,6 +85,9 @@ def predict_wip(task_id: str) -> dict:
             log.status = ProductionLogStatus.ANOMALY
         else:
             log.status = ProductionLogStatus.DRAFT
+
+        active_model_folder = Path(settings.MODEL_ARTIFACT_PATH).parent.name
+        log.model_artifact_id = active_model_folder
 
         db.commit()
 

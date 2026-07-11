@@ -169,6 +169,7 @@ class ProfileStatusResponse(BaseModel):
 
 class PredictionStatusResponse(BaseModel):
     task_id: str | None
+    model_artifact_id: str | None = None
     status: ProductionLogStatusSchema
     production_date: date
 
@@ -189,6 +190,7 @@ class PredictionStatusResponse(BaseModel):
 
 class PredictionHistoryItemResponse(BaseModel):
     task_id: str | None
+    model_artifact_id: str | None = None
     status: ProductionLogStatusSchema
     production_date: date
 

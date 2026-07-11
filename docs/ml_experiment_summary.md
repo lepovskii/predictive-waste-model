@@ -1,6 +1,6 @@
-﻿# ML Experiment Summary
+# ML Experiment Summary
 
-_Last updated: 2026-06-25_
+_Last updated: 2026-07-12_
 
 ## Objective
 
@@ -21,6 +21,8 @@ normalized production data -> ML inference artifact -> API -> database -> async 
 ```
 
 The prediction model is therefore evaluated as an important component, while the system architecture remains the main implementation focus.
+
+**Important Milestone:** The ML system is now decoupled and supports dynamic model switching (via Redis cache), legacy dataset formats (2024 hours vs 2025 minutes), and full model provenance tracking.
 
 ---
 
@@ -217,8 +219,9 @@ The system separates two concepts:
 |---|---|
 | Application data contract | The API/database can store rich production process data |
 | Model feature contract | Each model artifact declares which features it actually uses |
+| Provenance tracking | The system records `model_artifact_id` in the database to trace which model generated which prediction |
 
-This separation allows model artifacts to be replaced as long as the inference layer can map the available production payload into the features expected by the model.
+This separation allows model artifacts to be replaced (e.g., from `model_v1` to `model_v2`) dynamically with zero-downtime, as long as the inference layer can map the available production payload into the features expected by the model.
 
 Important statement:
 
@@ -279,6 +282,15 @@ Rationale:
 ```text
 The v1 model uses the latest and most operationally relevant 2025 production report format. These process features are available before final WIP reconciliation and do not directly contain the target outcome.
 ```
+
+---
+
+## v2 Feature Set and Legacy Adapter
+
+To support a larger historical context, `model_v2` was trained using cross-year datasets (2024 and 2025) with a `log1p` transformation.
+
+**Legacy Formats Support:**
+Because 2024 data used different feature formats (e.g., downtime was logged in **hours** instead of **minutes**, and columns were indexed differently), a specialized adapter (`RAW_GYS_FORMAT_V2`) was developed. The adapter automatically detects the legacy 2024 format, re-maps the indices, and multiplies downtime by 60 before normalizing it into the standard minutes-based payload expected by the ML inference layer.
 
 ---
 

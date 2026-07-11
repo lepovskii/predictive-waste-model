@@ -1,0 +1,23 @@
+{
+  "target": "production_ton",
+  "numeric_features": [
+    "raw_material_ton",
+    "program_stop_min",
+    "production_stop_min",
+    "mechanic_stop_min",
+    "electric_stop_min",
+    "roll_shop_stop_min",
+    "test_rolling_stop_min",
+    "trial_rolling_stop_min",
+    "others_stop_min",
+    "downtime_total_min",
+    "gas_total_day_nm3",
+    "electricity_total_kwh",
+    "day_of_week",
+    "day_of_month",
+    "month"
+  ],
+  "categorical_features": [
+    "profile_name"
+  ]
+}

@@ -1,6 +1,6 @@
 # Technical Status
 
-_Last updated: 2026-06-25_
+_Last updated: 2026-07-12_
 
 ## Project Overview
 
@@ -57,6 +57,7 @@ The research evaluates the ML model quantitatively, while also evaluating the im
 | Phase 6 - Frontend Next.js | Done | Main UI flows are implemented: overview, upload, batch prediction, manual prediction, history, detail, and reconciliation. |
 | Phase 7 - Full Docker Stack & Staging Deployment | Done for staging | VPS staging deployment was verified with frontend, FastAPI, Celery worker, PostgreSQL, and Redis running through Docker Compose. Production hardening is still a separate future concern. |
 | Phase 8 - Documentation & Thesis Prep | In Progress | Technical status and ML experiment notes are maintained for thesis reporting. SME validation and thesis framing are being prepared. |
+| Phase 9 - Model Provenance & Core System Upgrades | Done | Decoupled ML caching with Redis, dynamic model switching, legacy 2024 CSV adapter support, and dual-axis sorting in history UI. |
 
 Current phase interpretation:
 
@@ -150,16 +151,17 @@ The staging environment allows the system to be accessed outside the developer's
 
 ## Main Model Artifact
 
-The active model artifact is:
+The active model artifacts reside in:
 
 ```text
-ml_training/artifacts/wip_final_jan_oct_extra_trees/pipeline.pkl
+ml_training/artifacts/model_v1
+ml_training/artifacts/model_v2
 ```
 
 Model:
 
 ```text
-ExtraTreesRegressor
+ExtraTreesRegressor (for both v1 and v2)
 ```
 
 Target:
@@ -186,13 +188,13 @@ Current model decision:
 
 | Artifact | Status | Reason |
 |---|---|---|
-| v1 Jan-Oct 2025 Extra Trees | Active artifact | Best final test result and already integrated into backend inference |
-| v2 Cross-Year Extra Trees + log1p | Experiment only | More historical data was used, but final Nov-Dec performance was weaker than v1 |
+| `model_v1` (Jan-Oct 2025) | Active | Best final test result, stable features |
+| `model_v2` (Cross-Year) | Available | Integrated for A/B testing and available via dynamic model switching API |
 
 Important technical note:
 
 ```text
-The system is designed so the ML artifact can be replaced as long as the new artifact follows a compatible input-output contract. Feature changes should be isolated in the inference/adapter layer, not spread across the entire system.
+The system features a Decoupled ML Architecture. The ML cache state is managed by Redis, allowing zero-downtime model switching via `/models/switch`. Celery workers detect the new artifact ID dynamically. Model provenance is stamped on every prediction log.
 ```
 
 ---
@@ -253,19 +255,22 @@ Module responsibilities:
 | POST | `/predict` | Accept one normalized production payload, insert database rows, and dispatch Celery task |
 | POST | `/predict/batch` | Accept multiple normalized production payloads and submit each date independently |
 | GET | `/status/{task_id}` | Return processing or prediction status |
-| GET | `/predictions` | Return paginated prediction history with optional filters |
+| GET | `/predictions` | Return paginated prediction history with optional filters (status, date) and sorting (activity/production) |
 | POST | `/reconcile` | Store actual WIP values and reconcile prediction results |
 | POST | `/adapter/preview` | Upload CSV and preview normalized prediction payloads without inserting database rows |
+| GET | `/models` | Retrieve list of available ML model artifacts and the currently active one |
+| POST | `/models/switch` | Switch the active model artifact with zero downtime via Redis state sync |
 
 ---
 
 ## CSV Adapter Contract
 
-The adapter supports two detected formats:
+The adapter supports three detected formats:
 
 | Format | Meaning |
 |---|---|
-| `gys_lsm_daily_prod_report` | Raw company daily production report export |
+| `gys_lsm_daily_prod_report` | Raw company daily production report export (2025 format, minutes-based) |
+| `gys_lsm_daily_prod_report_v2` | Raw company daily production report export (Legacy 2024 format, hours-based) |
 | `canonical_process_csv_v1` | Cleaner canonical CSV with process feature columns |
 
 Adapter preview response includes:
@@ -368,8 +373,8 @@ Implemented frontend flows:
 | Prediction polling | Done | Polls `/status/{task_id}` until final status |
 | Prediction results table | Done | Displays output, estimated WIP, estimated prime, profile count, and status |
 | Manual prediction form | Done | Allows direct JSON-compatible production input without CSV |
-| Prediction history | Done | Shows paginated history from `/predictions` with status/date filters |
-| Prediction detail page | Done | Shows daily summary, profile-level predictions, and reconciliation form |
+| Prediction history | Done | Shows paginated history from `/predictions` with status/date filters and dual sorting (Activity vs Production) |
+| Prediction detail page | Done | Shows daily summary, profile-level predictions, reconciliation form, and model provenance badge |
 | Reconciliation form | Done | Sends actual WIP/prime to `/reconcile` |
 | Responsive layout | Done | Desktop sidebar and mobile top navigation are implemented |
 
@@ -407,6 +412,7 @@ Important columns:
 | `aktual_wip` | Actual WIP after reconciliation |
 | `aktual_prime` | Actual prime after reconciliation |
 | `needs_retraining` | Flag for future model drift/retraining |
+| `model_artifact_id` | Tracks which ML model artifact was used for this prediction |
 | `created_at` | Creation timestamp |
 | `updated_at` | Update timestamp |
 

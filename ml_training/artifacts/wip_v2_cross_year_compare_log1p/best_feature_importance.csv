@@ -1,0 +1,49 @@
+feature,importance
+num__raw_material_ton,0.1677111252327088
+num__production_ton,0.1515716812300661
+num__kv_33,0.09161425318131539
+num__material_pcs,0.07379601763029554
+cat__profile_name_IWF 150x75,0.07196488706626882
+num__rolling_hrs,0.0710400710585819
+num__production_pcs,0.06277512680961707
+num__electricity_total_kwh,0.0549611230928478
+num__availables_hrs,0.0534314867571438
+num__gas_total_day_nm3,0.04457681935741504
+cat__profile_name_IWF 250X125,0.03858825417370429
+num__kv_20,0.03215647570837406
+num__idle_hrs,0.013128071205027242
+num__rolling_hot_hrs,0.012796808200253593
+num__mechanic_stop_min,0.009104881049504127
+num__downtime_total_min,0.008643108577950372
+cat__profile_name_WF 200x100,0.00831567462343108
+cat__profile_name_HB 150x150,0.008145416912527254
+cat__profile_name_IWF 200x100,0.005147963484436677
+num__electric_stop_min,0.004044255931032263
+num__production_stop_min,0.0025628788991028466
+cat__profile_name_IWF 250x125,0.00251783003761317
+cat__profile_name_UNP 100x50,0.002396180724981406
+cat__profile_name_IWF 198x99,0.0021853691204605794
+num__others_stop_min,0.0016103522893494017
+cat__profile_name_UNP 150x75,0.0015128606499844575
+cat__profile_name_IWF 200X100,0.001155490373799745
+cat__profile_name_WF 150x75,0.0008052905642470501
+cat__profile_name_IWF 248x124,0.0007630522234527905
+cat__profile_name_HB 125x125,0.0006383377312787668
+cat__profile_name_L 150x150x15,0.0002169307245892114
+cat__profile_name_IWF 300x150,9.230381864995237e-05
+cat__profile_name_WF 250x125,1.609464663122538e-05
+cat__profile_name_HB 100x100,1.3286210518653695e-05
+cat__profile_name_HB 175x175,2.4070283952469536e-07
+num__roll_shop_stop_min,0.0
+cat__profile_name_IWF 198X99,0.0
+cat__profile_name_IWF 194x150,0.0
+cat__profile_name_HB 150X150,0.0
+cat__profile_name_L 130x130x10,0.0
+cat__profile_name_UB 203x102x23,0.0
+cat__profile_name_UB 150x75,0.0
+cat__profile_name_L 150x150x12,0.0
+cat__profile_name_L 130x130x12,0.0
+cat__profile_name_IWF 298x149,0.0
+cat__profile_name_UB 248x124,0.0
+cat__profile_name_UNP 200x80,0.0
+cat__profile_name_UNP 250x90,0.0
