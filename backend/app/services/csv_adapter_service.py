@@ -22,6 +22,7 @@ from app.schemas.prediction import PredictRequest
 
 
 RAW_GYS_FORMAT = "gys_lsm_daily_prod_report"
+RAW_GYS_FORMAT_V2 = "gys_lsm_daily_prod_report_v2"
 CANONICAL_FORMAT = "canonical_process_csv_v1"
 UNKNOWN_FORMAT = "unknown"
 
@@ -53,6 +54,32 @@ RAW_GYS_COLUMN_MAPPING = {
     "kv_20": 54,
     "kv_33": 55,
     "electricity_total_kwh": 56,
+}
+
+RAW_GYS_COLUMN_MAPPING_V2 = {
+    "production_date": 0,
+    "profile_name": 1,
+    "raw_material_ton": 2,
+    "production_ton": 3,
+    "material_pcs": 6,
+    "production_pcs": 7,
+    "total_hrs": 8,
+    "availables_hrs": 13,
+    "setup_time": 15,
+    "production_stop_min": 17,
+    "mechanic_stop_min": 19,
+    "electric_stop_min": 21,
+    "roll_shop_stop_min": 23,
+    "program_stop_min": 25,
+    "others_stop_min": 26,
+    "downtime_total_min": 27,
+    "rolling_hot_hrs": 29,
+    "idle_hrs": 33,
+    "rolling_hrs": 34,
+    "gas_total_day_nm3": 35,
+    "kv_20": 41,
+    "kv_33": 42,
+    "electricity_total_kwh": 43,
 }
 
 PROFILE_FIELDS = [
@@ -506,6 +533,7 @@ def build_csv_adapter_preview(
             row_number=row_number,
             column_mapping=adapter_format.column_mapping,
             default_zero_fields=adapter_format.default_zero_fields,
+            detected_format=adapter_format.detected_format,
             issues=issues,
         )
 
@@ -547,7 +575,7 @@ def _read_csv(file_content: bytes) -> pd.DataFrame:
         try:
             text = file_content.decode(encoding)
             delimiter = _detect_delimiter(text)
-            rows = list(csv.reader(StringIO(text), delimiter=delimiter))
+            rows = list(csv.reader(StringIO(text, newline=''), delimiter=delimiter))
 
             if not rows:
                 return pd.DataFrame()
@@ -595,19 +623,39 @@ def _detect_delimiter(text: str) -> str:
 
 def _detect_adapter_format(raw_df: pd.DataFrame) -> AdapterFormat:
     if _looks_like_raw_gys_format(raw_df):
-        required_columns_missing = _get_missing_required_columns(
-            raw_df=raw_df,
-            column_mapping=RAW_GYS_COLUMN_MAPPING,
-            required_fields=HARD_REQUIRED_FIELDS,
+        preview_text = " ".join(
+            str(value).lower()
+            for value in raw_df.head(10).to_numpy().flatten().tolist()
+            if str(value).strip()
         )
+        is_v2 = "delay (hours)" in preview_text
 
-        return AdapterFormat(
-            detected_format=RAW_GYS_FORMAT,
-            column_mapping=RAW_GYS_COLUMN_MAPPING,
-            data_start_index=None,
-            required_columns_missing=required_columns_missing,
-            default_zero_fields=set(),
-        )
+        if is_v2:
+            required_columns_missing = _get_missing_required_columns(
+                raw_df=raw_df,
+                column_mapping=RAW_GYS_COLUMN_MAPPING_V2,
+                required_fields=HARD_REQUIRED_FIELDS,
+            )
+            return AdapterFormat(
+                detected_format=RAW_GYS_FORMAT_V2,
+                column_mapping=RAW_GYS_COLUMN_MAPPING_V2,
+                data_start_index=None,
+                required_columns_missing=required_columns_missing,
+                default_zero_fields={"stand_change", "test_rolling_stop_min", "trial_rolling_stop_min"},
+            )
+        else:
+            required_columns_missing = _get_missing_required_columns(
+                raw_df=raw_df,
+                column_mapping=RAW_GYS_COLUMN_MAPPING,
+                required_fields=HARD_REQUIRED_FIELDS,
+            )
+            return AdapterFormat(
+                detected_format=RAW_GYS_FORMAT,
+                column_mapping=RAW_GYS_COLUMN_MAPPING,
+                data_start_index=None,
+                required_columns_missing=required_columns_missing,
+                default_zero_fields=set(),
+            )
 
     canonical_format = _detect_canonical_format(raw_df)
 
@@ -715,12 +763,14 @@ def _looks_like_raw_gys_format(raw_df: pd.DataFrame) -> bool:
         if str(value).strip()
     )
 
+    if "garuda yamato steel" in preview_text or "light section mill" in preview_text:
+        return True
+
     required_anchors = [
         "date",
         "profile",
         "raw material",
         "production",
-        "downtime",
     ]
 
     return all(anchor in preview_text for anchor in required_anchors)
@@ -816,6 +866,7 @@ def _build_profile_payload(
     row_number: int,
     column_mapping: dict[str, int],
     default_zero_fields: set[str],
+    detected_format: str,
     issues: list[AdapterIssue],
 ) -> dict[str, Any] | None:
     payload: dict[str, Any] = {
@@ -911,6 +962,18 @@ def _build_profile_payload(
         row_number=row_number,
         issues=issues,
     )
+
+    if detected_format == RAW_GYS_FORMAT_V2:
+        # Konversi semua jam (hours) menjadi menit (min) untuk parameter downtime
+        stop_fields = [
+            "setup_time", "program_stop_min", "stand_change", "production_stop_min",
+            "mechanic_stop_min", "electric_stop_min", "roll_shop_stop_min",
+            "test_rolling_stop_min", "trial_rolling_stop_min", "others_stop_min",
+            "downtime_total_min"
+        ]
+        for field in stop_fields:
+            if field in payload and isinstance(payload[field], Decimal):
+                payload[field] = payload[field] * Decimal("60")
 
     return payload
 

@@ -78,15 +78,15 @@ export function PredictionResultsTable({
           item.phase === "ERROR" ||
           item.phase === "TIMEOUT",
       ) && (
-        <div className="mb-5">
-          <FeedbackMessage
-            variant="warning"
-            title="Sebagian status prediksi belum berhasil diambil"
-          >
-            Beberapa task tidak dapat dimuat oleh frontend. Coba buka halaman riwayat prediksi atau refresh halaman jika backend sudah selesai memproses.
-          </FeedbackMessage>
-        </div>
-      )}
+          <div className="mb-5">
+            <FeedbackMessage
+              variant="warning"
+              title="Sebagian status prediksi belum berhasil diambil"
+            >
+              Beberapa task tidak dapat dimuat oleh frontend. Coba buka halaman riwayat prediksi atau refresh halaman jika backend sudah selesai memproses.
+            </FeedbackMessage>
+          </div>
+        )}
       <p className="mb-3 text-xs text-[#66736d] md:hidden">
         Geser tabel ke samping untuk melihat semua kolom.
       </p>
@@ -136,16 +136,22 @@ export function PredictionResultsTable({
                   <td className="px-3 py-4">
                     {item.phase === "ERROR" ||
                       item.phase === "TIMEOUT" ? (
-                        <span className="badge-text rounded-full bg-[#ffe0d7] px-3 py-1 text-xs font-bold text-[#8a351d]">
-                          {getPollingStatusLabel(item)}
-                        </span>
-                      ) : (
-                        <span
-                          className={`badge-text rounded-full px-3 py-1 text-xs font-bold ${statusStyles[status]}`}
-                        >
-                          {getPollingStatusLabel(item)}
-                        </span>
-                      )}
+                      <span className="badge-text rounded-full bg-[#ffe0d7] px-3 py-1 text-xs font-bold text-[#8a351d]">
+                        {getPollingStatusLabel(item)}
+                      </span>
+                    ) : (
+                      <span
+                        className={`badge-text rounded-full px-3 py-1 text-xs font-bold ${statusStyles[status]}`}
+                      >
+                        {getPollingStatusLabel(item)}
+                      </span>
+                    )}
+
+                    {item.data?.model_artifact_id && (
+                      <p className="mt-2 text-[11px] font-semibold text-[#42524b] bg-[#e7e9e8] px-2 py-0.5 rounded inline-block">
+                        {item.data.model_artifact_id}
+                      </p>
+                    )}
 
                     {item.errorMessage && (
                       <p className="mt-2 max-w-xs text-xs leading-5 text-[#8a351d]">

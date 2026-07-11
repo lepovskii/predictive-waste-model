@@ -7,7 +7,6 @@ from app.services.production_service import (
 )
 
 from app.services.ml_service import (
-    MODEL_FEATURE_COLUMNS,
     build_prediction_dataframe,
     load_model,
     predict_profile_wip,

@@ -138,6 +138,7 @@ def list_prediction_logs(
     status_filter: ProductionLogStatus | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    sort_order: str = "activity_desc",
 ) -> tuple[list[DailyProductionLog], int]:
     list_statement = (
         select(DailyProductionLog)
@@ -187,12 +188,28 @@ def list_prediction_logs(
             date_to_condition
         )
 
-    list_statement = (
-        list_statement
-        .order_by(
+    if sort_order == "activity_asc":
+        order_clauses = (
+            DailyProductionLog.created_at.asc(),
+        )
+    elif sort_order == "date_desc":
+        order_clauses = (
             DailyProductionLog.production_date.desc(),
             DailyProductionLog.created_at.desc(),
         )
+    elif sort_order == "date_asc":
+        order_clauses = (
+            DailyProductionLog.production_date.asc(),
+            DailyProductionLog.created_at.asc(),
+        )
+    else: # activity_desc or default
+        order_clauses = (
+            DailyProductionLog.created_at.desc(),
+        )
+
+    list_statement = (
+        list_statement
+        .order_by(*order_clauses)
         .offset(offset)
         .limit(limit)
     )

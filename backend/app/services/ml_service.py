@@ -1,56 +1,72 @@
 from __future__ import annotations
 
-from functools import lru_cache
+import json
 from pathlib import Path
 
 import joblib
 import pandas as pd
+import redis
 
 from app.core.config import settings
 from app.models.waste import DailyProfileDetail
 
+# Global dynamic cache
+_current_artifact_id: str | None = None
+_cached_model = None
+_cached_metadata: dict | None = None
 
-MODEL_FEATURE_COLUMNS = [
-    "profile_name",
-    "raw_material_ton",
-    "production_ton",
-    "material_pcs",
-    "production_pcs",
-    "total_hrs",
-    "availables_hrs",
-    "setup_time",
-    "program_stop_min",
-    "stand_change",
-    "production_stop_min",
-    "mechanic_stop_min",
-    "electric_stop_min",
-    "roll_shop_stop_min",
-    "test_rolling_stop_min",
-    "trial_rolling_stop_min",
-    "others_stop_min",
-    "downtime_total_min",
-    "rolling_hot_hrs",
-    "idle_hrs",
-    "rolling_hrs",
-    "gas_total_day_nm3",
-    "kv_20",
-    "kv_33",
-    "electricity_total_kwh",
-]
+_redis_client = redis.Redis.from_url(settings.REDIS_URL, decode_responses=True)
 
+def get_active_artifact_id() -> str:
+    try:
+        artifact_id = _redis_client.get("active_model_artifact_id")
+        if artifact_id:
+            return artifact_id
+    except Exception:
+        pass
+        
+    # Fallback to settings
+    active_path = Path(settings.MODEL_ARTIFACT_PATH)
+    return active_path.parent.name
 
-@lru_cache(maxsize=1)
+def get_model_path(artifact_id: str) -> Path:
+    return Path(__file__).resolve().parents[3] / "ml_training" / "artifacts" / artifact_id / "pipeline.pkl"
+
+def _ensure_cache():
+    global _current_artifact_id, _cached_model, _cached_metadata
+    
+    current_id = get_active_artifact_id()
+    
+    if _current_artifact_id != current_id or _cached_model is None:
+        model_path = get_model_path(current_id)
+        metadata_path = model_path.parent / "model_metadata.json"
+        
+        if not model_path.exists():
+            raise FileNotFoundError(f"Model artifact tidak ditemukan: {model_path}")
+        if not metadata_path.exists():
+            raise FileNotFoundError(f"Model metadata tidak ditemukan: {metadata_path}")
+            
+        _cached_model = joblib.load(model_path)
+        
+        with open(metadata_path, "r", encoding="utf-8") as f:
+            _cached_metadata = json.load(f)
+            
+        _current_artifact_id = current_id
+
 def load_model():
-    model_path = Path(settings.MODEL_ARTIFACT_PATH)
+    _ensure_cache()
+    return _cached_model
 
-    if not model_path.is_absolute():
-        model_path = Path(__file__).resolve().parents[3] / model_path
+def load_model_metadata() -> dict:
+    _ensure_cache()
+    return _cached_metadata
 
-    if not model_path.exists():
-        raise FileNotFoundError(f"Model artifact tidak ditemukan: {model_path}")
-
-    return joblib.load(model_path)
-
+def clear_model_cache():
+    """Panggil ini saat model aktif diganti agar cache di-reset"""
+    global _current_artifact_id, _cached_model, _cached_metadata
+    _current_artifact_id = None
+    _cached_model = None
+    _cached_metadata = None
 
 def profile_detail_to_dict(detail: DailyProfileDetail) -> dict:
     return {
@@ -81,15 +97,17 @@ def profile_detail_to_dict(detail: DailyProfileDetail) -> dict:
         "electricity_total_kwh": detail.electricity_total_kwh,
     }
 
-
 def build_prediction_dataframe(
     profile_details: list[DailyProfileDetail],
 ) -> pd.DataFrame:
     rows = [profile_detail_to_dict(detail) for detail in profile_details]
     df = pd.DataFrame(rows)
+    
+    # Ambil daftar kolom yang dibutuhkan secara dinamis dari metadata
+    metadata = load_model_metadata()
+    feature_columns = metadata["features"]["all_input_columns"]
 
-    return df[MODEL_FEATURE_COLUMNS].copy()
-
+    return df[feature_columns].copy()
 
 def predict_profile_wip(
     profile_details: list[DailyProfileDetail],

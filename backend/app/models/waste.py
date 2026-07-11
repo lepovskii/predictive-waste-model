@@ -60,6 +60,12 @@ class DailyProductionLog(Base):
         nullable=True,
         index=True,
     )
+    
+    model_artifact_id: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+        index=True,
+    )
 
     total_output_ton: Mapped[Decimal] = mapped_column(
         Numeric(14, 2),

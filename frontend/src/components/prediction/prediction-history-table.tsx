@@ -97,12 +97,17 @@ export function PredictionHistoryTable({
                 >
                   {item.status}
                 </span>
+
+                {item.model_artifact_id && (
+                  <p className="mt-2 text-[11px] font-semibold text-[#42524b] bg-[#e7e9e8] px-2 py-0.5 rounded inline-block">
+                    {item.model_artifact_id}
+                  </p>
+                )}
               </td>
 
               <td className="value-text px-5 py-4 text-xs text-[#66736d]">
                 {formatDateTime(item.updated_at)}
               </td>
-
               <td className="px-5 py-4">
                 {item.task_id ? (
                   <Link

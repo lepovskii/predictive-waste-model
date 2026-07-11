@@ -1,7 +1,7 @@
 from pathlib import Path
 
 from pydantic_settings import BaseSettings, SettingsConfigDict
-
+import dotenv
 
 ENV_FILE = Path(__file__).resolve().parents[2] / ".env"  # backend/.env
 
@@ -44,3 +44,8 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+def update_active_model_path(new_path: str):
+    """Update the MODEL_ARTIFACT_PATH in .env file and settings"""
+    dotenv.set_key(str(ENV_FILE), "MODEL_ARTIFACT_PATH", new_path)
+    settings.MODEL_ARTIFACT_PATH = new_path

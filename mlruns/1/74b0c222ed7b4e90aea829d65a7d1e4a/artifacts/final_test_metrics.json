@@ -1,0 +1,185 @@
+{
+  "target": "wip_ton",
+  "model_path": "ml_training\\artifacts\\wip_final_jan_oct_extra_trees\\pipeline.pkl",
+  "train_csv": ".\\ml_training\\dataset_completed - super_final_jan_oct.csv",
+  "test_csv": ".\\ml_training\\dataset_completed - nov_dec_dataset.csv",
+  "rows_train": 115,
+  "rows_test": 24,
+  "train_period": {
+    "date_min": "2025-01-22",
+    "date_max": "2025-10-30"
+  },
+  "test_period": {
+    "date_min": "2025-11-17",
+    "date_max": "2025-12-06"
+  },
+  "train_target_summary": {
+    "count": 115,
+    "mean": 126.12269565217392,
+    "median": 89.49,
+    "std": 132.83968322440757,
+    "min": 0.37,
+    "max": 713.53
+  },
+  "test_target_summary": {
+    "count": 24,
+    "mean": 199.35666666666668,
+    "median": 195.425,
+    "std": 191.18209814016416,
+    "min": 0.22,
+    "max": 863.74
+  },
+  "baseline_values": {
+    "train_mean": 126.12269565217392,
+    "train_median": 89.49
+  },
+  "model_metrics": {
+    "rmse": 177.36891228291455,
+    "mae": 109.99622508564931,
+    "r2": 0.10186015432416795
+  },
+  "baseline_mean_metrics": {
+    "rmse": 200.974793733212,
+    "mae": 139.60705072463767,
+    "r2": -0.15311372643431698
+  },
+  "baseline_median_metrics": {
+    "rmse": 217.02151425607553,
+    "mae": 147.57833333333335,
+    "r2": -0.34460442935212043
+  },
+  "comparison": {
+    "model_beats_baseline_mean_by_rmse": true,
+    "model_beats_baseline_mean_by_mae": true,
+    "model_beats_baseline_mean_by_r2": true,
+    "model_beats_baseline_median_by_rmse": true,
+    "model_beats_baseline_median_by_mae": true,
+    "model_beats_baseline_median_by_r2": true,
+    "rmse_improvement_vs_mean": 23.60588145029746,
+    "mae_improvement_vs_mean": 29.61082563898836,
+    "r2_improvement_vs_mean": 0.2549738807584849,
+    "rmse_improvement_vs_median": 39.652601973160984,
+    "mae_improvement_vs_median": 37.58210824768403,
+    "r2_improvement_vs_median": 0.4464645836762884
+  },
+  "month_metrics": [
+    {
+      "month": "2025-11",
+      "rows": 17,
+      "actual_mean": 145.63411764705882,
+      "predicted_mean": 136.9625323415646,
+      "rmse": 99.50901572630202,
+      "mae": 82.562112510596,
+      "r2": 0.36680221043982664
+    },
+    {
+      "month": "2025-12",
+      "rows": 7,
+      "actual_mean": 329.8257142857143,
+      "predicted_mean": 181.9717942387992,
+      "rmse": 289.5066723835777,
+      "mae": 176.62192705363597,
+      "r2": -0.4429528621026235
+    }
+  ],
+  "top_errors": [
+    {
+      "production_date": "2025-12-03",
+      "profile_name": "IWF 250x125",
+      "actual_wip_ton": 863.74,
+      "predicted_wip_ton": 176.8679753795236,
+      "absolute_error": 686.8720246204764
+    },
+    {
+      "production_date": "2025-12-04",
+      "profile_name": "IWF 200x100",
+      "actual_wip_ton": 464.23,
+      "predicted_wip_ton": 159.1151943629543,
+      "absolute_error": 305.1148056370457
+    },
+    {
+      "production_date": "2025-11-19",
+      "profile_name": "IWF 300x150",
+      "actual_wip_ton": 382.5,
+      "predicted_wip_ton": 161.7911997139007,
+      "absolute_error": 220.7088002860993
+    },
+    {
+      "production_date": "2025-11-18",
+      "profile_name": "IWF 300x150",
+      "actual_wip_ton": 364.65,
+      "predicted_wip_ton": 203.81018491883398,
+      "absolute_error": 160.839815081166
+    },
+    {
+      "production_date": "2025-11-22",
+      "profile_name": "HB 175x175",
+      "actual_wip_ton": 289.43,
+      "predicted_wip_ton": 158.3356445277546,
+      "absolute_error": 131.0943554722454
+    },
+    {
+      "production_date": "2025-11-29",
+      "profile_name": "HB 150x150",
+      "actual_wip_ton": 278.78,
+      "predicted_wip_ton": 150.8648526630693,
+      "absolute_error": 127.91514733693066
+    },
+    {
+      "production_date": "2025-11-28",
+      "profile_name": "HB 100x100",
+      "actual_wip_ton": 29.91,
+      "predicted_wip_ton": 155.57992267578155,
+      "absolute_error": 125.66992267578155
+    },
+    {
+      "production_date": "2025-11-26",
+      "profile_name": "IWF 200x100",
+      "actual_wip_ton": 66.35,
+      "predicted_wip_ton": 176.29274363608602,
+      "absolute_error": 109.94274363608602
+    },
+    {
+      "production_date": "2025-12-02",
+      "profile_name": "L 150x150x15",
+      "actual_wip_ton": 233.4,
+      "predicted_wip_ton": 127.85733333731271,
+      "absolute_error": 105.5426666626873
+    },
+    {
+      "production_date": "2025-12-06",
+      "profile_name": "UNP 150x75",
+      "actual_wip_ton": 265.61,
+      "predicted_wip_ton": 365.32367954170627,
+      "absolute_error": 99.71367954170626
+    }
+  ],
+  "expected_features": [
+    "profile_name",
+    "raw_material_ton",
+    "production_ton",
+    "material_pcs",
+    "production_pcs",
+    "total_hrs",
+    "availables_hrs",
+    "setup_time",
+    "program_stop_min",
+    "stand_change",
+    "production_stop_min",
+    "mechanic_stop_min",
+    "electric_stop_min",
+    "roll_shop_stop_min",
+    "test_rolling_stop_min",
+    "trial_rolling_stop_min",
+    "others_stop_min",
+    "downtime_total_min",
+    "rolling_hot_hrs",
+    "idle_hrs",
+    "rolling_hrs",
+    "gas_total_day_nm3",
+    "kv_20",
+    "kv_33",
+    "electricity_total_kwh"
+  ],
+  "note": "This is the final test on Nov-Dec data. Do not tune the model using this result."
+}

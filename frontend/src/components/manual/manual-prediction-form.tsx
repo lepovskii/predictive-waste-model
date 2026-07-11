@@ -3,6 +3,7 @@
 import {
   type FormEvent,
   useState,
+  useEffect
 } from "react";
 
 import { ManualProfileForm } from "@/components/manual/manual-profile-form";
@@ -11,6 +12,7 @@ import { FeedbackMessage } from "@/components/common/feedback-message";
 import {
   getApiErrorMessage,
   submitPrediction,
+  getAvailableModels,
 } from "@/lib/api-client";
 
 import {
@@ -44,6 +46,23 @@ export function ManualPredictionForm() {
   const [isSubmitting, setIsSubmitting] =
     useState(false);
 
+  const [requiredFeatures, setRequiredFeatures] = useState<string[] | null>(null);
+
+  useEffect(() => {
+    async function loadFeatures() {
+      try {
+        const response = await getAvailableModels();
+        const activeModel = response.models.find(m => m.is_active);
+        if (activeModel) {
+          setRequiredFeatures(activeModel.metadata.features.all_input_columns);
+        }
+      } catch (error) {
+        console.error("Gagal memuat metadata model:", error);
+      }
+    }
+    loadFeatures();
+  }, []);
+
   function updateGeneralField(
     field:
       | "production_date"
@@ -74,9 +93,9 @@ export function ManualPredictionForm() {
       profiles: current.profiles.map((profile) =>
         profile.id === profileId
           ? {
-              ...profile,
-              [field]: value,
-            }
+            ...profile,
+            [field]: value,
+          }
           : profile,
       ),
     }));
@@ -258,7 +277,8 @@ export function ManualPredictionForm() {
               profile={profile}
               profileIndex={index}
               canRemove={form.profiles.length > 1}
-              disabled={isSubmitting}
+              disabled={isSubmitting || requiredFeatures === null}
+              requiredFeatures={requiredFeatures}
               onChange={updateProfile}
               onRemove={removeProfile}
             />

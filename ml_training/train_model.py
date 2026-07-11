@@ -7,7 +7,7 @@ from pathlib import Path
 import joblib
 import numpy as np
 import pandas as pd
-from sklearn.compose import ColumnTransformer
+from sklearn.compose import ColumnTransformer, TransformedTargetRegressor
 from sklearn.ensemble import ExtraTreesRegressor
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
@@ -29,6 +29,14 @@ LEAKAGE_COLS = {
     "reject_percentage",
     "miss_roll_percentage",
     "class_b_percentage",
+}
+
+MODEL_PARAMS = {
+    "n_estimators": 500,
+    "max_depth": 5,
+    "min_samples_leaf": 3,
+    "random_state": 42,
+    "n_jobs": -1,
 }
 
 
@@ -143,7 +151,11 @@ def load_dataset(csv_path: str) -> tuple[pd.DataFrame, pd.Series, pd.DataFrame, 
     return X, y, meta, report
 
 
-def build_pipeline(numeric_cols: list[str], categorical_cols: list[str]) -> Pipeline:
+def build_pipeline(
+    numeric_cols: list[str],
+    categorical_cols: list[str],
+    target_transform: str,
+) -> Pipeline:
     preprocessor = ColumnTransformer(
         transformers=[
             (
@@ -169,15 +181,18 @@ def build_pipeline(numeric_cols: list[str], categorical_cols: list[str]) -> Pipe
         remainder="drop",
     )
 
-    model = ExtraTreesRegressor(
-        n_estimators=300,
-        max_depth=4,
-        min_samples_leaf=1,
-        max_features=0.7,
-        bootstrap=True,
-        random_state=42,
-        n_jobs=-1,
-    )
+    base_model = ExtraTreesRegressor(**MODEL_PARAMS)
+
+    if target_transform == "log1p":
+        model = TransformedTargetRegressor(
+            regressor=base_model,
+            func=np.log1p,
+            inverse_func=np.expm1,
+        )
+    elif target_transform == "none":
+        model = base_model
+    else:
+        raise ValueError(f"target_transform tidak dikenal: {target_transform}")
 
     return Pipeline(
         steps=[
@@ -189,7 +204,14 @@ def build_pipeline(numeric_cols: list[str], categorical_cols: list[str]) -> Pipe
 
 def save_feature_importance(pipeline: Pipeline, out_dir: Path) -> None:
     feature_names = pipeline.named_steps["preprocess"].get_feature_names_out()
-    importances = pipeline.named_steps["model"].feature_importances_
+    model_step = pipeline.named_steps["model"]
+
+    if isinstance(model_step, TransformedTargetRegressor):
+        fitted_model = model_step.regressor_
+    else:
+        fitted_model = model_step
+
+    importances = fitted_model.feature_importances_
 
     importance_df = (
         pd.DataFrame(
@@ -211,12 +233,18 @@ def main() -> None:
     parser.add_argument(
         "--csv",
         required=True,
-        help="Path dataset final training Jan-Oct.",
+        help="Path dataset final training.",
     )
     parser.add_argument(
         "--out-dir",
         required=True,
         help="Folder output artefak final model.",
+    )
+    parser.add_argument(
+        "--target-transform",
+        choices=["none", "log1p"],
+        default="log1p",
+        help="Transformasi target sebelum training. Gunakan log1p untuk WIP yang skewed.",
     )
 
     args = parser.parse_args()
@@ -229,6 +257,7 @@ def main() -> None:
     pipeline = build_pipeline(
         numeric_cols=numeric_cols,
         categorical_cols=categorical_cols,
+        target_transform=args.target_transform,
     )
 
     pipeline.fit(X, y)
@@ -244,14 +273,8 @@ def main() -> None:
         "model_purpose": "Final training model for WIP ton prediction",
         "target": TARGET_COL,
         "algorithm": "ExtraTreesRegressor",
-        "model_params": {
-            "n_estimators": 300,
-            "max_depth": 4,
-            "min_samples_leaf": 1,
-            "max_features": 0.7,
-            "bootstrap": True,
-            "random_state": 42,
-        },
+        "target_transform": args.target_transform,
+        "model_params": MODEL_PARAMS,
         "features": {
             "numeric": numeric_cols,
             "categorical": categorical_cols,
@@ -263,9 +286,9 @@ def main() -> None:
             "reason": "WIP ton cannot be negative in production context.",
         },
         "important_note": (
-            "This artifact is trained on Jan-Oct data after model selection and tuning. "
+            "This artifact is trained after model selection/comparison. "
             "Do not use this report as final performance evaluation. "
-            "Final performance must be measured on untouched Nov-Dec test data."
+            "Final performance must be measured on a later untouched test dataset."
         ),
     }
 
@@ -290,6 +313,7 @@ def main() -> None:
     print("Final training selesai.")
     print(f"Rows used: {len(y)}")
     print(f"Date range: {data_report['date_min']} sampai {data_report['date_max']}")
+    print(f"Target transform: {args.target_transform}")
     print(f"Output dir: {out_dir}")
     print("Artifact utama: pipeline.pkl")
     print("Catatan: metrics final tetap harus dihitung memakai dataset Nov-Dec.")

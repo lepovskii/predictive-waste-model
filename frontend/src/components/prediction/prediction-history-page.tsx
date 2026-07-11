@@ -46,6 +46,9 @@ export function PredictionHistoryPage() {
   const [appliedDateTo, setAppliedDateTo] =
     useState("");
 
+  const [sortOrder, setSortOrder] = useState<"activity_desc" | "activity_asc" | "date_desc" | "date_asc">("activity_desc");
+  const [appliedSortOrder, setAppliedSortOrder] = useState<"activity_desc" | "activity_asc" | "date_desc" | "date_asc">("activity_desc");
+
   const [offset, setOffset] = useState(0);
 
   const [history, setHistory] =
@@ -73,6 +76,7 @@ export function PredictionHistoryPage() {
             status: appliedStatus,
             dateFrom: appliedDateFrom,
             dateTo: appliedDateTo,
+            sort: appliedSortOrder,
           },
           controller.signal,
         );
@@ -99,6 +103,7 @@ export function PredictionHistoryPage() {
     appliedStatus,
     appliedDateFrom,
     appliedDateTo,
+    appliedSortOrder,
     refreshKey,
   ]);
 
@@ -116,17 +121,20 @@ export function PredictionHistoryPage() {
     setAppliedStatus(statusFilter);
     setAppliedDateFrom(dateFrom);
     setAppliedDateTo(dateTo);
+    setAppliedSortOrder(sortOrder);
   }
 
   function resetFilters() {
     setStatusFilter("");
     setDateFrom("");
     setDateTo("");
+    setSortOrder("activity_desc");
 
     setOffset(0);
     setAppliedStatus("");
     setAppliedDateFrom("");
     setAppliedDateTo("");
+    setAppliedSortOrder("activity_desc");
     setErrorMessage(null);
   }
 
@@ -146,6 +154,7 @@ export function PredictionHistoryPage() {
     appliedStatus ? `Status: ${statusLabels[appliedStatus]}` : null,
     appliedDateFrom ? `Dari: ${appliedDateFrom}` : null,
     appliedDateTo ? `Sampai: ${appliedDateTo}` : null,
+    `Urutan: ${appliedSortOrder === "asc" ? "Terlama ke Terbaru" : "Terbaru ke Terlama"}`,
   ].filter(Boolean);
 
   return (
@@ -264,7 +273,30 @@ export function PredictionHistoryPage() {
             />
           </label>
 
-          <div className="flex items-end gap-2">
+          <label>
+            <span className="text-sm font-medium text-[#33473e]">
+              Urutkan berdasarkan
+            </span>
+
+            <select
+              value={sortOrder}
+              onChange={(event) =>
+                setSortOrder(event.target.value as "activity_desc" | "activity_asc" | "date_desc" | "date_asc")
+              }
+              className="mt-2 w-full rounded-xl border border-[#cfd5d1] bg-white px-3 py-2.5"
+            >
+              <optgroup label="Aktivitas (Sistem)">
+                <option value="activity_desc">Prediksi Terbaru</option>
+                <option value="activity_asc">Prediksi Terlama</option>
+              </optgroup>
+              <optgroup label="Tanggal Produksi">
+                <option value="date_desc">Produksi Terbaru</option>
+                <option value="date_asc">Produksi Terlama</option>
+              </optgroup>
+            </select>
+          </label>
+
+          <div className="flex items-end gap-2 md:col-span-4">
             <button
               type="submit"
               className="flex-1 rounded-xl bg-[#173a30] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#245547]"

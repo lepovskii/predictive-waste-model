@@ -97,6 +97,7 @@ export interface ProfilePredictionStatus {
 
 export interface PredictionStatusResponse {
   task_id: string | null;
+  model_artifact_id?: string | null;
   status: ProductionStatus;
   production_date: string;
 
@@ -118,6 +119,7 @@ export interface PredictionStatusResponse {
 
 export interface PredictionHistoryItem {
   task_id: string | null;
+  model_artifact_id?: string | null;
   status: ProductionStatus;
   production_date: string;
 
@@ -145,4 +147,5 @@ export interface PredictionHistoryQuery {
   status?: ProductionStatus | "";
   dateFrom?: string;
   dateTo?: string;
+  sort?: "activity_desc" | "activity_asc" | "date_desc" | "date_asc";
 }

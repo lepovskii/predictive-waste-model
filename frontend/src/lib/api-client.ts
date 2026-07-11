@@ -12,6 +12,10 @@ import type {
   ReconcileRequest,
   ReconcileResponse,
 } from "@/types/reconciliation";
+import type {
+  AvailableModelsResponse,
+  SwitchModelResponse
+} from "@/types/models";
 
 const API_BASE_PATH = "/api/backend";
 
@@ -178,6 +182,10 @@ export async function getPredictionHistory(
     searchParams.set("date_to", query.dateTo);
   }
 
+  if (query.sort) {
+    searchParams.set("sort", query.sort);
+  }
+
   return request<PredictionHistoryResponse>(
     `/predictions?${searchParams.toString()}`,
     {
@@ -196,5 +204,26 @@ export async function submitReconciliation(
       "Content-Type": "application/json",
     },
     body: JSON.stringify(payload),
+  });
+}
+
+export async function getAvailableModels(
+  signal?: AbortSignal,
+): Promise<AvailableModelsResponse> {
+  return request<AvailableModelsResponse>("/models", {
+    method: "GET",
+    signal,
+  });
+}
+
+export async function switchActiveModel(
+  artifactId: string,
+): Promise<SwitchModelResponse> {
+  return request<SwitchModelResponse>("/models/switch", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ artifact_id: artifactId }),
   });
 }

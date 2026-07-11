@@ -1,0 +1,82 @@
+{
+  "target": "production_ton",
+  "n_rows_used": 101,
+  "n_splits": 5,
+  "fold_metrics": [
+    {
+      "fold": 1,
+      "train_rows": 26,
+      "test_rows": 15,
+      "rmse": 111.76829892270253,
+      "mae": 82.73132108561198,
+      "r2": 0.9495843812540016,
+      "mape_percent": 16.836969046435,
+      "train_date_min": "2025-01-22",
+      "train_date_max": "2025-04-21",
+      "test_date_min": "2025-04-22",
+      "test_date_max": "2025-05-23"
+    },
+    {
+      "fold": 2,
+      "train_rows": 41,
+      "test_rows": 15,
+      "rmse": 60.76551543736721,
+      "mae": 47.00842660522461,
+      "r2": 0.9878934380098393,
+      "mape_percent": 88038556.25189787,
+      "train_date_min": "2025-01-22",
+      "train_date_max": "2025-05-23",
+      "test_date_min": "2025-05-24",
+      "test_date_max": "2025-07-02"
+    },
+    {
+      "fold": 3,
+      "train_rows": 56,
+      "test_rows": 16,
+      "rmse": 41.72599658895478,
+      "mae": 31.66643440246583,
+      "r2": 0.9874666849196145,
+      "mape_percent": 6.807190007269728,
+      "train_date_min": "2025-01-22",
+      "train_date_max": "2025-07-02",
+      "test_date_min": "2025-07-03",
+      "test_date_max": "2025-08-07"
+    },
+    {
+      "fold": 4,
+      "train_rows": 72,
+      "test_rows": 13,
+      "rmse": 32.79455422366874,
+      "mae": 26.406042993985693,
+      "r2": 0.9948683095992603,
+      "mape_percent": 73942974.45426695,
+      "train_date_min": "2025-01-22",
+      "train_date_max": "2025-08-07",
+      "test_date_min": "2025-08-08",
+      "test_date_max": "2025-10-21"
+    },
+    {
+      "fold": 5,
+      "train_rows": 85,
+      "test_rows": 16,
+      "rmse": 34.263997474266645,
+      "mae": 29.279032020568856,
+      "r2": 0.9934959183776287,
+      "mape_percent": 21.085426228859678,
+      "train_date_min": "2025-01-22",
+      "train_date_max": "2025-10-21",
+      "test_date_min": "2025-10-22",
+      "test_date_max": "2025-10-31"
+    }
+  ],
+  "summary": {
+    "rmse_mean": 56.26367252939199,
+    "rmse_std": 29.486130227472632,
+    "mae_mean": 43.41825142157139,
+    "mae_std": 20.90858564495873,
+    "r2_mean": 0.9826617464320689,
+    "r2_std": 0.016798509361594095,
+    "mape_mean_percent": 32396315.08715002,
+    "mape_std_percent": 39926794.76725928
+  }
+}
