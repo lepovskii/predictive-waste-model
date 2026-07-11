@@ -22,8 +22,8 @@ frontend/tsconfig.tsbuildinfo
 ml_training/*.csv
 ml_training/__pycache__/
 ml_training/artifacts/*
-!ml_training/artifacts/wip_final_jan_oct_extra_trees/
-!ml_training/artifacts/wip_final_jan_oct_extra_trees/**
+!ml_training/artifacts/model_*/
+!ml_training/artifacts/model_*/**
 
 postgres_data/
 redis_data/
