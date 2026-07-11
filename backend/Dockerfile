@@ -15,7 +15,7 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY backend /app/backend
-COPY ml_training/artifacts/wip_final_jan_oct_extra_trees /app/ml_training/artifacts/wip_final_jan_oct_extra_trees
+COPY ml_training/artifacts /app/ml_training/artifacts
 
 WORKDIR /app/backend
 
