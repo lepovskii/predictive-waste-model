@@ -1,3 +1,26 @@
+"use client";
+
+import { useState } from "react";
+import type {
+  AdapterIssueSeverity,
+  AdapterPreviewResponse,
+  AdapterPreviewStatus,
+} from "@/types/adapter";
+
+interface AdapterPreviewPanelProps {
+  preview: AdapterPreviewResponse | null;
+}
+
+const statusStyles: Record<AdapterPreviewStatus, string> = {
+  VALID: "bg-[#d9eee2] text-[#175c38]",
+  WARNING: "bg-[#fff0c7] text-[#795500]",
+  INVALID: "bg-[#ffe0d7] text-[#8a351d]",
+};
+
+const issueStyles: Record<AdapterIssueSeverity, string> = {
+  INFO: "border-[#b7c9d5] bg-[#edf5fa] text-[#345668]",
+  WARNING: "border-[#e5c76d] bg-[#fff8df] text-[#725400]",
+  ERROR: "border-[#e3a28c] bg-[#fff0eb] text-[#8a351d]",
 import type {
   AdapterIssueSeverity,
   AdapterPreviewResponse,
@@ -27,6 +50,7 @@ function formatFieldName(fieldName: string): string {
 export function AdapterPreviewPanel({
   preview,
 }: AdapterPreviewPanelProps) {
+  const [visibleIssuesCount, setVisibleIssuesCount] = useState(4);
   if (!preview) {
     return (
       <aside className="rounded-3xl bg-[#183d32] p-6 text-white sm:p-8">
@@ -88,16 +112,6 @@ export function AdapterPreviewPanel({
         />
       </dl>
 
-      <div className="mt-6 border-t border-white/20 pt-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[#b9cbc3]">
-          Format terdeteksi
-        </p>
-
-        <p className="value-text mt-1 break-all text-sm">
-          {preview.detected_format}
-        </p>
-      </div>
-
       {preview.required_columns_missing.length > 0 && (
         <div className="mt-6">
           <p className="text-sm font-semibold text-[#ffd0bf]">
@@ -118,11 +132,11 @@ export function AdapterPreviewPanel({
       )}
 
       {preview.issues.length > 0 && (
-        <div className="mt-6">
+        <div className="mt-6 border-t border-white/20 pt-5">
           <p className="text-sm font-semibold">Temuan validasi</p>
 
-          <ul className="mt-3 space-y-3">
-            {preview.issues.slice(0, 8).map((issue, index) => (
+          <ul className="mt-3 max-h-[320px] space-y-3 overflow-y-auto pr-2 custom-scrollbar">
+            {preview.issues.slice(0, visibleIssuesCount).map((issue, index) => (
               <li
                 key={`${issue.code}-${issue.row_number ?? "general"}-${index}`}
                 className={`rounded-xl border p-3 text-sm ${issueStyles[issue.severity]}`}
@@ -150,10 +164,13 @@ export function AdapterPreviewPanel({
             ))}
           </ul>
 
-          {preview.issues.length > 8 && (
-            <p className="mt-3 text-xs text-[#b9cbc3]">
-              Masih ada {preview.issues.length - 8} temuan lainnya.
-            </p>
+          {preview.issues.length > visibleIssuesCount && (
+            <button
+              onClick={() => setVisibleIssuesCount((prev) => prev + 10)}
+              className="mt-4 flex w-full cursor-pointer items-center justify-center rounded-xl bg-white/10 px-4 py-2.5 text-xs font-medium transition-colors hover:bg-white/20"
+            >
+              Masih ada {preview.issues.length - visibleIssuesCount} temuan lainnya...
+            </button>
           )}
         </div>
       )}

@@ -82,6 +82,30 @@ RAW_GYS_COLUMN_MAPPING_V2 = {
     "electricity_total_kwh": 43,
 }
 
+RAW_GYS_COLUMN_MAPPING_V3 = {
+    "production_date": 0,
+    "profile_name": 1,
+    "raw_material_ton": 2,
+    "production_ton": 4,  # Prod Act (Ton)
+    "material_pcs": 8,
+    "production_pcs": 9,
+    "total_hrs": 10,
+    "availables_hrs": 13,
+    "setup_time": 15,
+    "production_stop_min": 17,
+    "mechanic_stop_min": 19,
+    "electric_stop_min": 21,
+    "roll_shop_stop_min": 23,
+    "program_stop_min": 25,
+    "others_stop_min": 27,
+    "downtime_total_min": 28,
+    "rolling_hot_hrs": 30,
+    "gas_total_day_nm3": 35,
+    "kv_20": 40,
+    "kv_33": 41,
+    "electricity_total_kwh": 42,
+}
+
 PROFILE_FIELDS = [
     field_name
     for field_name in RAW_GYS_COLUMN_MAPPING
@@ -628,9 +652,23 @@ def _detect_adapter_format(raw_df: pd.DataFrame) -> AdapterFormat:
             for value in raw_df.head(10).to_numpy().flatten().tolist()
             if str(value).strip()
         )
-        is_v2 = "delay (hours)" in preview_text
+        is_v3 = "prod std (ton)" in preview_text
+        is_v2 = not is_v3 and "delay (hours)" in preview_text
 
-        if is_v2:
+        if is_v3:
+            required_columns_missing = _get_missing_required_columns(
+                raw_df=raw_df,
+                column_mapping=RAW_GYS_COLUMN_MAPPING_V3,
+                required_fields=HARD_REQUIRED_FIELDS - {"idle_hrs", "rolling_hrs"},
+            )
+            return AdapterFormat(
+                detected_format="gys_lsm_daily_prod_report_v3",
+                column_mapping=RAW_GYS_COLUMN_MAPPING_V3,
+                data_start_index=None,
+                required_columns_missing=required_columns_missing,
+                default_zero_fields={"stand_change", "test_rolling_stop_min", "trial_rolling_stop_min", "idle_hrs", "rolling_hrs"},
+            )
+        elif is_v2:
             required_columns_missing = _get_missing_required_columns(
                 raw_df=raw_df,
                 column_mapping=RAW_GYS_COLUMN_MAPPING_V2,
