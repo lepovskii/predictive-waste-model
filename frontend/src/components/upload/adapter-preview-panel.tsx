@@ -21,26 +21,6 @@ const issueStyles: Record<AdapterIssueSeverity, string> = {
   INFO: "border-[#b7c9d5] bg-[#edf5fa] text-[#345668]",
   WARNING: "border-[#e5c76d] bg-[#fff8df] text-[#725400]",
   ERROR: "border-[#e3a28c] bg-[#fff0eb] text-[#8a351d]",
-import type {
-  AdapterIssueSeverity,
-  AdapterPreviewResponse,
-  AdapterPreviewStatus,
-} from "@/types/adapter";
-
-interface AdapterPreviewPanelProps {
-  preview: AdapterPreviewResponse | null;
-}
-
-const statusStyles: Record<AdapterPreviewStatus, string> = {
-  VALID: "bg-[#d9eee2] text-[#175c38]",
-  WARNING: "bg-[#fff0c7] text-[#795500]",
-  INVALID: "bg-[#ffe0d7] text-[#8a351d]",
-};
-
-const issueStyles: Record<AdapterIssueSeverity, string> = {
-  INFO: "border-[#b7c9d5] bg-[#edf5fa] text-[#345668]",
-  WARNING: "border-[#e5c76d] bg-[#fff8df] text-[#725400]",
-  ERROR: "border-[#e3a28c] bg-[#fff0eb] text-[#8a351d]",
 };
 
 function formatFieldName(fieldName: string): string {
