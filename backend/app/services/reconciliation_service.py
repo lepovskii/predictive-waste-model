@@ -106,9 +106,7 @@ def validate_reconciliation(
             )
 
     if not item.profiles:
-        return "DEBUG: item.profiles is empty! You are using the old frontend."
-    else:
-        return f"DEBUG: item.profiles has {len(item.profiles)} items."
+        return None
 
     stored_profiles = build_profile_map(
         log.profile_details
