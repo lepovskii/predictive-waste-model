@@ -48,11 +48,26 @@ export function ReconciliationForm({
   prediction,
   onReconciled,
 }: ReconciliationFormProps) {
-  const [actualWipTon, setActualWipTon] = useState(
-    prediction.aktual_wip === null
-      ? ""
-      : String(prediction.aktual_wip),
-  );
+  const [actualWipTonPerProfile, setActualWipTonPerProfile] = useState<
+    Record<string, string>
+  >(() => {
+    const initialState: Record<string, string> = {};
+    for (const profile of prediction.profiles) {
+      initialState[profile.profile_name] =
+        profile.actual_wip_ton === null
+          ? ""
+          : String(profile.actual_wip_ton);
+    }
+    return initialState;
+  });
+
+  const totalActualWipTon = prediction.profiles.reduce((sum, profile) => {
+    const val = actualWipTonPerProfile[profile.profile_name];
+    if (val && isValidNonNegativeNumber(val)) {
+      return sum + Number(normalizeDecimalInput(val));
+    }
+    return sum;
+  }, 0);
 
   const [actualPrimeTon, setActualPrimeTon] = useState(
     prediction.aktual_prime === null
@@ -79,11 +94,14 @@ export function ReconciliationForm({
     setErrorMessage(null);
     setResult(null);
 
-    if (!isValidNonNegativeNumber(actualWipTon)) {
-      setErrorMessage(
-        "Aktual WIP wajib diisi dengan angka 0 atau lebih.",
-      );
-      return;
+    for (const profile of prediction.profiles) {
+      const val = actualWipTonPerProfile[profile.profile_name];
+      if (!isValidNonNegativeNumber(val || "")) {
+        setErrorMessage(
+          `Aktual WIP untuk profile ${profile.profile_name} wajib diisi dengan angka 0 atau lebih.`,
+        );
+        return;
+      }
     }
 
     if (
@@ -103,11 +121,14 @@ export function ReconciliationForm({
         items: [
           {
             production_date: prediction.production_date,
-            actual_wip_ton:
-              normalizeDecimalInput(actualWipTon),
+            actual_wip_ton: String(totalActualWipTon),
             actual_prime_ton: actualPrimeTon.trim()
               ? normalizeDecimalInput(actualPrimeTon)
               : null,
+            profiles: prediction.profiles.map(p => ({
+              profile_name: p.profile_name,
+              actual_wip_ton: Number(normalizeDecimalInput(actualWipTonPerProfile[p.profile_name])),
+            }))
           },
         ],
       });
@@ -165,24 +186,46 @@ export function ReconciliationForm({
 
       <form
         onSubmit={handleSubmit}
-        className="mt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]"
+        className="mt-6"
       >
-        <label>
-          <span className="text-sm font-medium text-[#33473e]">
-            Aktual WIP ton
-          </span>
+        <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+          {prediction.profiles.map((profile) => (
+            <label key={profile.detail_seq}>
+              <span className="text-sm font-medium text-[#33473e] block truncate">
+                Aktual WIP {profile.profile_name} (ton)
+              </span>
 
-          <input
-            value={actualWipTon}
-            onChange={(event) =>
-              setActualWipTon(event.target.value)
-            }
-            disabled={isDisabled || isSubmitting}
-            inputMode="decimal"
-            placeholder="contoh: 120.50"
-            className="mt-2 w-full rounded-xl border border-[#cfd5d1] bg-white px-3 py-2.5 disabled:bg-[#f2f1ec] disabled:text-[#8b9691]"
-          />
-        </label>
+              <input
+                value={actualWipTonPerProfile[profile.profile_name] ?? ""}
+                onChange={(event) =>
+                  setActualWipTonPerProfile((prev) => ({
+                    ...prev,
+                    [profile.profile_name]: event.target.value,
+                  }))
+                }
+                disabled={isDisabled || isSubmitting}
+                inputMode="decimal"
+                placeholder="contoh: 2.50"
+                className="mt-2 w-full rounded-xl border border-[#cfd5d1] bg-white px-3 py-2.5 disabled:bg-[#f2f1ec] disabled:text-[#8b9691]"
+              />
+            </label>
+          ))}
+        </div>
+
+        <div className="mt-6 border-t border-[#e4e2d9] pt-6 grid gap-4 md:grid-cols-[1fr_1fr_auto]">
+          <label>
+            <span className="text-sm font-medium text-[#33473e]">
+              Total aktual WIP ton
+            </span>
+
+            <input
+              value={totalActualWipTon > 0 || Object.values(actualWipTonPerProfile).some(v => v !== "") ? totalActualWipTon.toFixed(2) : ""}
+              readOnly
+              disabled
+              placeholder="0.00 (Otomatis)"
+              className="mt-2 w-full rounded-xl border border-[#cfd5d1] bg-[#f2f1ec] px-3 py-2.5 text-[#8b9691] font-semibold"
+            />
+          </label>
 
         <label>
           <span className="text-sm font-medium text-[#33473e]">
@@ -211,6 +254,7 @@ export function ReconciliationForm({
               ? "Menyimpan..."
               : "Simpan aktual"}
           </button>
+        </div>
         </div>
       </form>
 
