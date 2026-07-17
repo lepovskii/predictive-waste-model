@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.celery_app import celery_app
 from app.core.database import SessionLocal
 from app.models.waste import DailyProductionLog, ProductionLogStatus
-from app.services.ml_service import predict_profile_wip
+from app.services.ml_service import predict_profile_wip, get_active_artifact_id
 
 
 @celery_app.task(name="app.tasks.prediction_tasks.celery_health_check")
@@ -86,7 +86,7 @@ def predict_wip(task_id: str) -> dict:
         else:
             log.status = ProductionLogStatus.DRAFT
 
-        active_model_folder = Path(settings.MODEL_ARTIFACT_PATH).parent.name
+        active_model_folder = get_active_artifact_id()
         log.model_artifact_id = active_model_folder
 
         db.commit()
