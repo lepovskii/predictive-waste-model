@@ -183,6 +183,9 @@ def create_prediction_batch(
 @router.get(
     "/predictions",
     response_model=PredictionHistoryResponse,
+    responses={
+        422: {"description": "Validation Error (e.g., date_from > date_to)"},
+    },
 )
 def get_prediction_history(
     limit: int = Query(default=20, ge=1, le=100),
@@ -243,6 +246,9 @@ def reconcile_prediction_results(
 @router.get(
     "/status/{task_id}",
     response_model=PredictionStatusResponse,
+    responses={
+        404: {"description": "Task ID not found"},
+    },
 )
 def get_prediction_status(
     task_id: str,
