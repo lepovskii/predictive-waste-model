@@ -73,6 +73,10 @@ def health_check() -> dict[str, str]:
     "/predict",
     response_model=PredictAcceptedResponse,
     status_code=status.HTTP_202_ACCEPTED,
+    responses={
+        409: {"description": "Production date already exists (Duplicate)"},
+        503: {"description": "Celery task dispatch failed"},
+    },
 )
 def create_prediction(
     payload: PredictRequest,
