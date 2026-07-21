@@ -113,7 +113,7 @@ export function ManualPredictionForm() {
       return;
     }
 
-    const profileId = `profile-${crypto.randomUUID()}`;
+    const profileId = `profile-${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 9)}`;
 
     setForm((current) => ({
       ...current,
