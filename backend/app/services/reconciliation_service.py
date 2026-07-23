@@ -81,6 +81,12 @@ def validate_reconciliation(
             "direkonsiliasi."
         )
 
+    if log.status == ProductionLogStatus.RECONCILED:
+        return (
+            "Data sudah direkonsiliasi sebelumnya. "
+            "Re-rekonsiliasi tidak diizinkan."
+        )
+
     if log.estimasi_wip_total is None:
         return "Nilai estimasi WIP belum tersedia."
 

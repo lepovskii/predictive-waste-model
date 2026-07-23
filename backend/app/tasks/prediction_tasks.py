@@ -61,6 +61,8 @@ def predict_wip(task_id: str) -> dict:
                 "message": "No profile details found.",
             }
 
+        artifact_id_at_prediction_time = get_active_artifact_id()
+
         predictions = predict_profile_wip(profile_details)
 
         total_wip = Decimal("0")
@@ -86,8 +88,7 @@ def predict_wip(task_id: str) -> dict:
         else:
             log.status = ProductionLogStatus.DRAFT
 
-        active_model_folder = get_active_artifact_id()
-        log.model_artifact_id = active_model_folder
+        log.model_artifact_id = artifact_id_at_prediction_time
 
         db.commit()
 
